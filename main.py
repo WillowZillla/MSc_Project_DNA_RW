@@ -1,7 +1,7 @@
-from urllib.request import urlretrieve
-import zipfile as zf
 import matplotlib.pyplot as plt
-from funcs import one_dimension, file_import, seq_extract
+from mpl_toolkits import mplot3d
+from funcs import *
+
 
 while True:
     try:
@@ -21,12 +21,27 @@ while True:
                 sequences = seq_extract(gen_id)
 
                 one_d_series = one_dimension(sequences)
+                two_d_series = two_dimension(sequences)
+                three_d_series = three_dimension(sequences)
                 for seq_num, series in one_d_series.items():
                     plt.title = seq_num
                     plt.xlabel("base number")
                     plt.ylabel("static time series")
                     plt.plot(series)      # get all graphs on one image to show it
                     plt.show()
+                for seq_num, series in two_d_series.items():
+                    plt.title = seq_num
+                    plt.xlabel("A's and G's")
+                    plt.ylabel("T's and C's")
+                    plt.plot(series[0], series[1])      # get all graphs on one image to show it
+                    plt.show()
+                for seq_num, series in three_d_series.items():
+                    fig = plt.figure()
+                    ax = plt.axes(projection = "3d")
+                    ax.plot3D(series[0], series[1], series[2])
+                    ax.set_title(seq_num)
+                    plt.show()
+
 
             case 2:
                 print("triggered case 2")
@@ -45,6 +60,8 @@ while True:
                     file_import(gen_id)
                     sequences = seq_extract(gen_id)
                     one_d_master.append(one_dimension(sequences))
+                    two_d_master.append(two_dimension(sequences))
+                    three_d_master.append(three_dimension(sequences))
 
 
 

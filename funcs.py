@@ -34,6 +34,34 @@ def two_dimension(sequences):
             rw[seq][1].append(y_tracker)
     return rw
 
+def three_dimension(sequences):
+    rw = {}
+    for seq, code in sequences.items():
+        rw[seq] = [[], [], []]
+        x_tracker = 0
+        y_tracker = 0
+        z_tracker = 0
+        for base in code:
+            match base:
+                case "A":
+                    x_tracker += 0.75
+                    y_tracker -= 0.25
+                    z_tracker -= 0.25
+                case "C":
+                    x_tracker -= 0.25
+                    y_tracker += 0.75
+                    z_tracker -= 0.25
+                case "G":
+                    x_tracker -= 0.25
+                    y_tracker -= 0.25
+                    z_tracker += 0.75
+                case "T":
+                    pass
+            rw[seq][0].append(x_tracker)
+            rw[seq][1].append(y_tracker)
+            rw[seq][2].append(z_tracker)
+    return rw
+
 def file_import(gen_id):
     url = (
         f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{gen_id}/download?include_annotation_type=FASTA_RNA"
