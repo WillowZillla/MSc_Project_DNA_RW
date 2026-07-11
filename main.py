@@ -1,8 +1,7 @@
 from urllib.request import urlretrieve
 import zipfile as zf
 import matplotlib.pyplot as plt
-from one_d import one_dimension
-import os
+from funcs import one_dimension, file_import
 
 while True:
     x = input("Please select which service you would like to use:\n1. View the time series graphs and analysis for one gene\n2. View the time series analysis for a group of genes "
@@ -14,15 +13,19 @@ while True:
 
 match x:
     case 1:
-        id = input("GenBank ID: ")
-        url = (
-            f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{id}/download?include_annotation_type=FASTA_RNA"
-        )
-        filename = f"static/{id}.zip"
-        urlretrieve(url, filename)
+        gen_id = input("GenBank ID: ")
+        file_import(gen_id)
 
-        with zf.ZipFile(f"static/{id}.zip", "r") as seq:
-            seq.extract("ncbi_dataset/data/rna.fna", path = f"sequences/{id}")
+        # The Actual Code from file_import() in case it doesn't work
+
+        # url = (
+        #     f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{id}/download?include_annotation_type=FASTA_RNA"
+        # )
+        # filename = f"static/{id}.zip"
+        # urlretrieve(url, filename)
+        #
+        # with zf.ZipFile(f"static/{id}.zip", "r") as seq:
+        #     seq.extract("ncbi_dataset/data/rna.fna", path = f"sequences/{id}")
 
         with open(f"sequences/{id}/ncbi_dataset/data/rna.fna", "r") as rna:
             raw_seq = rna.read().splitlines()
@@ -39,3 +42,6 @@ match x:
 
         plt.plot(one_d_series)      # get all graphs on one image to show it
         plt.show()
+
+    case 2:
+        pass
