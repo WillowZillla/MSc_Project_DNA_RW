@@ -22,9 +22,9 @@ match x:
         urlretrieve(url, filename)
 
         with zf.ZipFile(f"static/{id}.zip", "r") as seq:
-            seq.extract("ncbi_dataset/data/rna.fna", path = f"sequences")
+            seq.extract("ncbi_dataset/data/rna.fna", path = f"sequences/{id}")
 
-        with open(f"sequences/ncbi_dataset/data/{seq}.fna", "r") as rna:
+        with open(f"sequences/{id}/ncbi_dataset/data/rna.fna", "r") as rna:
             raw_seq = rna.read().splitlines()
             sequences = {}
             seq_num = 0
@@ -35,3 +35,7 @@ match x:
                 else:
                     sequences[f"sequence {seq_num}"] = sequences[f"sequence {seq_num}"] + line
 
+        one_d_series = one_dimension(sequences)
+
+        plt.plot(one_d_series)      # get all graphs on one image to show it
+        plt.show()
