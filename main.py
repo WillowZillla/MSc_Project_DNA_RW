@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from funcs import *
+import hurst
 
 
 while True:
@@ -24,6 +25,14 @@ while True:
                 two_d_series = two_dimension(sequences)
                 three_d_series = three_dimension(sequences)
                 for seq_num, series in one_d_series.items():
+                    H, c, data = hurst.compute_Hc(series = series, kind = "random_walk", simplified = True)
+                    print(f"{seq_num} Hurst Exponent: {H}")
+                    if H>0.55:
+                        print("Persistent trend")
+                    elif H<0.45:
+                        print("Mean reversal")
+                    else:
+                        print("Random Walk")
                     plt.title = seq_num
                     plt.xlabel("base number")
                     plt.ylabel("static time series")
@@ -44,26 +53,32 @@ while True:
 
 
             case 2:
-                print("triggered case 2")
                 try:
                     with open("ID.txt", "r") as f:
                         gen_ids = f.read()
-                        print("no error :) smiles so sneetly")
                 except FileNotFoundError:
-                    print("No file detected, please upload a comma separated list of gene IDs (e.g. <3208, 4288, 2764>) in a text file named ID.txt to the working directory")
+                    print("No file detected, please upload a comma separated list of gene IDs (e.g. 3208, 4288, 2764) in a text file named ID.txt to the working directory")
                     continue
                 gen_ids_list = gen_ids.split(", ")
-                one_d_master = []
-                two_d_master = []
-                three_d_master = []
+                one_d_master = {}
+                two_d_master = {}
+                three_d_master = {}
+                hursts = {}
                 for gen_id in gen_ids_list:
                     file_import(gen_id)
                     sequences = seq_extract(gen_id)
-                    one_d_master.append(one_dimension(sequences))
-                    two_d_master.append(two_dimension(sequences))
-                    three_d_master.append(three_dimension(sequences))
+                    one_d_master[gen_id]= one_dimension(sequences)
+                    two_d_master[gen_id] = two_dimension(sequences)
+                    three_d_master[gen_id] = three_dimension(sequences)
+                for gen_id, sequences in one_d_master.items():
+                    for seq_num, series in sequences.items():
+                        H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
+                        hursts[gen_id][seq_num] = H
 
-
+                for gen_id, sequences in hursts.items():
+                    print(gen_id + ":")
+                    for seq_num, h in sequences:
+                        print(f"{seq_num}, {h}")
 
                     # Don't want to have this many graphs show up, especially if its like 200 sequences
 
