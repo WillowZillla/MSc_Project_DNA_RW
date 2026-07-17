@@ -71,13 +71,14 @@ while True:
                     two_d_master[gen_id] = two_dimension(sequences)
                     three_d_master[gen_id] = three_dimension(sequences)
                 for gen_id, sequences in one_d_master.items():
+                    hursts[gen_id]={}
                     for seq_num, series in sequences.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
                         hursts[gen_id][seq_num] = H
 
                 for gen_id, sequences in hursts.items():
                     print(gen_id + ":")
-                    for seq_num, h in sequences:
+                    for seq_num, h in sequences.items():
                         print(f"{seq_num}, {h}")
 
                     # Don't want to have this many graphs show up, especially if its like 200 sequences
