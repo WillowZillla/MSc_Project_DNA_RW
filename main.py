@@ -80,7 +80,7 @@ while True:
                 one_d = {}
                 two_d = {}
                 three_d = {}
-                hursts = {}
+                results = {}
                 for gen_id in gen_ids_list:
                     file_import(gen_id)
                     sequence = seq_extract(gen_id)
@@ -88,15 +88,24 @@ while True:
                     two_d[gen_id] = two_dimension(sequence)
                     three_d[gen_id] = three_dimension(sequence)
                 for gen_id, mappings in one_d.items():
-                    hursts[gen_id]={}
                     for mapping, series in mappings.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
-                        hursts[gen_id][mapping] = H
+                        results[gen_id]["one_d"][mapping]["Hurst Exponent"] = H
+                        K = katz(series)
+                        results[gen_id]["one_d"][mapping]["Katz Dimension"] = K
 
-                for gen_id, sequences in hursts.items():
+                for gen_id, dimensions in results.items():
                     print(gen_id + ":")
-                    for seq_num, h in sequences.items():
-                        print(f"{seq_num}, {h}")
+                    for dimension, mappings in dimensions.items():
+                        print(f"* {dimension}:")
+                        for mapping, exps in mappings.items():
+                            print(f"\t* {mapping}:")
+                            for exp, value in exps.items():
+                                print(f"\t\t-{exp} = {value}")
+
+                for gen_id, mappings in two_d.items():
+                    for mapping, sequence in mappings:
+                        pass
 
                     # Don't want to have this many graphs show up, especially if its like 200 sequences
 
