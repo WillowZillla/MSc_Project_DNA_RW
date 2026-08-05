@@ -34,12 +34,8 @@ while True:
                         print("Mean reversal")
                     else:
                         print("Random Walk")
-                    L = 0
-                    i = 0
-                    first_point=series[0]
-                    for base in series:
-                        i+=1
-
+                    k = katz(series)
+                    print(f"{mapping} Katz dimension: {k}")
 
 
                     fig, (ax0, ax1, ax2) = plt.subplots(3, 1, layout="constrained")

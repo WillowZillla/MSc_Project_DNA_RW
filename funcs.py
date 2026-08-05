@@ -1,5 +1,6 @@
 from urllib.request import urlretrieve
 import zipfile as zf
+import math
 
 def one_dimension(sequence):
     rw = {}
@@ -91,6 +92,29 @@ def three_dimension(sequence):
         rw[1].append(y_tracker)
         rw[2].append(z_tracker)
     return rw
+
+def katz(sequence: list):
+    n = len(sequence)-1
+    y0 = sequence[0]
+    max_d = float('-inf')
+    l = 0
+    x = 0
+    for base in sequence:
+        print(x)
+        y = base - y0
+        print(y)
+        d = math.sqrt(x**2+y**2)
+        print(d)
+        max_d = max([max_d, d])
+        print(max_d)
+        x+=1
+    for i in range(len(sequence)-1):
+        y = sequence[i]-sequence[i+1]
+        x = 1
+        d = math.sqrt(x**2+y**2)
+        l+=d
+    k = math.log(n)/(math.log(n) + math.log(max_d/l))
+    return k
 
 def file_import(gen_id):
     url = (
