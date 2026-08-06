@@ -3,31 +3,28 @@ import zipfile as zf
 import math
 
 def one_dimension(sequence):
-    rw = {"ag-ct": [], "ac-gt": [], "at-cg": []}
-    #rw["ag-ct"] = []
+    rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
     tracker = 0
     for base in sequence:
         if base in ["A", "G"]:
             tracker += 1
         else:
             tracker -= 1
-        rw["ag-ct"].append(tracker)
-    #rw["ac-gt"] = []
+        rw["AG-CT"].append(tracker)
     tracker = 0
     for base in sequence:
         if base in ["A", "C"]:
             tracker += 1
         else:
             tracker -= 1
-        rw["ac-gt"].append(tracker)
-    #rw["at-cg"] = []
+        rw["AC-GT"].append(tracker)
     tracker = 0
     for base in sequence:
         if base in ["A", "T"]:
             tracker += 1
         else:
             tracker -= 1
-        rw["at-cg"].append(tracker)
+        rw["AT-CG"].append(tracker)
     return rw
 
 def two_dimension(sequence):
