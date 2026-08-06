@@ -9,7 +9,8 @@ while True:
     try:
         x = int(input("Please select which service you would like to use:\n"
                       "1. View the time series graphs and analysis for one gene\n"
-                      "2. View the time series analysis for a group of genes (please upload a list of RefSeq Gene IDs in ID.txt in the working directory)\n"
+                      "2. View the time series analysis for a group of genes "
+                      "(please upload a list of RefSeq Gene IDs in ID.txt in the working directory)\n"
                       "3. Exit\n"))
     except ValueError:
         print("Invalid selection, please input either 1 or 2")
@@ -74,38 +75,74 @@ while True:
                     with open("ID.txt", "r") as f:
                         gen_ids = f.read()
                 except FileNotFoundError:
-                    print("No file detected, please upload a comma separated list of gene IDs (e.g. 3208, 4288, 2764) in a text file named ID.txt to the working directory")
+                    print("No file detected, "
+                          "please upload a comma separated list of gene IDs (e.g. 3208, 4288, 2764) "
+                          "in a text file named ID.txt to the working directory")
                     continue
+
                 gen_ids_list = gen_ids.split(", ")
                 one_d = {}
                 two_d = {}
                 three_d = {}
                 results = {}
+
                 for gen_id in gen_ids_list:
                     file_import(gen_id)
                     sequence = seq_extract(gen_id)
                     one_d[gen_id]= one_dimension(sequence)
                     two_d[gen_id] = two_dimension(sequence)
                     three_d[gen_id] = three_dimension(sequence)
+
                 for gen_id, mappings in one_d.items():
+                    results[gen_id] = {"1D": {}}
                     for mapping, series in mappings.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
-                        results[gen_id]["one_d"][mapping]["Hurst Exponent"] = H
-                        K = katz(series)
-                        results[gen_id]["one_d"][mapping]["Katz Dimension"] = K
-
-                for gen_id, dimensions in results.items():
-                    print(gen_id + ":")
-                    for dimension, mappings in dimensions.items():
-                        print(f"* {dimension}:")
-                        for mapping, exps in mappings.items():
-                            print(f"\t* {mapping}:")
-                            for exp, value in exps.items():
-                                print(f"\t\t-{exp} = {value}")
+                        K = katz(series, 1)
+                        results[gen_id]["1D"][mapping]={f"Hurst Exponent": H,
+                                                        f"Katz Dimension": K}
 
                 for gen_id, mappings in two_d.items():
-                    for mapping, sequence in mappings:
-                        pass
+                    results[gen_id]["2D"] = {}
+                    for mapping, series in mappings.items():
+                        x_series = []
+                        y_series = []
+                        for i in range(len(series[0])):
+                            x_series.append(series[0][i])
+                            y_series.append(series[1][i])
+                        xH, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                        yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+                        K = katz(series, 2)
+                        results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} Hurst Exponent": xH,
+                                                          f"{mapping[3] + mapping[4]} Hurst Exponent": yH,
+                                                          f"Katz Dimension": K}
+
+                for gen_id, series in three_d.items():
+                    results[gen_id]["3D"] = {}
+                    x_series = []
+                    y_series = []
+                    z_series = []
+                    for i in range(len(series[0])):
+                        x_series.append(series[0][i])
+                        y_series.append(series[1][i])
+                        z_series.append(series[2][i])
+                    xH, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                    yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+                    zH, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                    K = katz(series, 2)
+                    results[gen_id]["3D"]["ACG"] = {f"Adenine Hurst Exponent": xH,
+                                                    f"Guanine Hurst Exponent": yH,
+                                                    f"Cytosine Hurst Exponent": zH,
+                                                    f"Katz Dimension": K}
+                    print(len(results[gen_id]))
+
+                    for gen_id, dimensions in results.items():
+                        print(gen_id + ":")
+                        for dimension, mappings in dimensions.items():
+                            print(f"* {dimension}:")
+                            for mapping, exps in mappings.items():
+                                print(f"\t* {mapping}:")
+                                for exp, value in exps.items():
+                                    print(f"\t\t-{exp} = {value}")
 
                     # Don't want to have this many graphs show up, especially if its like 200 sequences
 

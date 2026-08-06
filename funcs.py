@@ -3,8 +3,8 @@ import zipfile as zf
 import math
 
 def one_dimension(sequence):
-    rw = {}
-    rw["ag-ct"] = []
+    rw = {"ag-ct": [], "ac-gt": [], "at-cg": []}
+    #rw["ag-ct"] = []
     tracker = 0
     for base in sequence:
         if base in ["A", "G"]:
@@ -12,7 +12,7 @@ def one_dimension(sequence):
         else:
             tracker -= 1
         rw["ag-ct"].append(tracker)
-    rw["ac-gt"] = []
+    #rw["ac-gt"] = []
     tracker = 0
     for base in sequence:
         if base in ["A", "C"]:
@@ -20,7 +20,7 @@ def one_dimension(sequence):
         else:
             tracker -= 1
         rw["ac-gt"].append(tracker)
-    rw["at-cg"] = []
+    #rw["at-cg"] = []
     tracker = 0
     for base in sequence:
         if base in ["A", "T"]:
@@ -93,26 +93,59 @@ def three_dimension(sequence):
         rw[2].append(z_tracker)
     return rw
 
-def katz(sequence: list):
-    n = len(sequence)-1
-    y0 = sequence[0]
-    max_d = float('-inf')
-    l = 0
-    x = 0
-    for base in sequence:
-        print(x)
-        y = base - y0
-        print(y)
-        d = math.sqrt(x**2+y**2)
-        print(d)
-        max_d = max([max_d, d])
-        print(max_d)
-        x+=1
-    for i in range(len(sequence)-1):
-        y = sequence[i]-sequence[i+1]
-        x = 1
-        d = math.sqrt(x**2+y**2)
-        l+=d
+def katz(sequence: list, dimension: int):
+    match dimension:
+        case 1:
+            n = len(sequence)-1
+            y0 = sequence[0]
+            max_d = float('-inf')
+            l = 0
+            x = 0
+            for base in sequence:
+                y = base - y0
+                d = math.sqrt(x**2+y**2)
+                max_d = max(max_d, d)
+                x+=1
+            for i in range(len(sequence)-1):
+                y = sequence[i]-sequence[i+1]
+                x = 1
+                d = math.sqrt(x**2+y**2)
+                l+=d
+        case 2:
+            n = len(sequence[0])-1
+            x0 = sequence[0][0]
+            y0 = sequence[1][0]
+            max_d = float("-inf")
+            l = 0
+            for i in range(len(sequence[0])):
+                x = sequence[0][i] - x0
+                y = sequence[1][i] - y0
+                d = math.sqrt(x**2+y**2)
+                max_d = max(max_d, d)
+            for i in range(len(sequence[0])-1):
+                x = sequence[0][i] - sequence[0][i+1]
+                y = sequence[1][i] - sequence[1][i+1]
+                d = math.sqrt(x ** 2 + y ** 2)
+                l += d
+        case 3:
+            n = len(sequence[0]) - 1
+            x0 = sequence[0][0]
+            y0 = sequence[1][0]
+            z0 = sequence[2][0]
+            max_d = float("-inf")
+            l = 0
+            for i in range(len(sequence[0])):
+                x = sequence[0][i]-x0
+                y = sequence[1][i] - y0
+                z = sequence[2][i] - z0
+                d = math.sqrt(z**2 + x**2 + y**2)
+                max_d = max(max_d, d)
+            for i in range(len(sequence[0])-1):
+                x = sequence[0][i] - sequence[0][i + 1]
+                y = sequence[1][i] - sequence[1][i + 1]
+                z = sequence[2][i] - sequence[2][i + 1]
+                d = math.sqrt(x**2 + y**2 + z**2)
+                l += d
     k = math.log(n)/(math.log(n) + math.log(max_d/l))
     return k
 
