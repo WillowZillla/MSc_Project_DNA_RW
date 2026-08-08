@@ -90,6 +90,38 @@ def three_dimension(sequence):
         rw[2].append(z_tracker)
     return rw
 
+def mean_pos(series, dimension):
+    match dimension:
+        case 1:
+            total_pos = 0
+            for element in series:
+                total_pos += element
+            mean = total_pos/len(series)
+            return mean
+        case 2:
+            total_pos_x = 0
+            total_pos_y = 0
+            for i in range(len(series[0])):
+                total_pos_x += series[0][i]
+                total_pos_y += series[1][i]
+            mean_x = total_pos_x/len(series[0])
+            mean_y = total_pos_y/len(series[0])
+            return mean_x, mean_y
+        case 3:
+            total_pos_x = 0
+            total_pos_y = 0
+            total_pos_z = 0
+            for i in range(len(series[0])):
+                total_pos_x += series[0][i]
+                total_pos_y += series[1][i]
+                total_pos_y += series[2][i]
+            mean_x = total_pos_x/len(series[0])
+            mean_y = total_pos_y/len(series[0])
+            mean_z = total_pos_z/len(series[0])
+            return mean_x, mean_y, mean_z
+    print("invalid dimension")
+    return 0
+
 def katz(sequence: list, dimension: int):
     match dimension:
         case 1:

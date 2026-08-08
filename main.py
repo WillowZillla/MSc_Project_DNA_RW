@@ -35,7 +35,7 @@ while True:
                         print("Mean reversal")
                     else:
                         print("Random Walk")
-                    k = katz(series)
+                    k = katz(series, 1)
                     print(f"{mapping} Katz dimension: {k}")
 
 
@@ -98,8 +98,10 @@ while True:
                     for mapping, series in mappings.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
                         K = katz(series, 1)
+                        M = mean_pos(series, 1)
                         results[gen_id]["1D"][mapping]={f"Hurst Exponent": H,
-                                                        f"Katz Dimension": K}
+                                                        f"Katz Dimension": K,
+                                                        f"Mean Position": M}
 
                 for gen_id, mappings in two_d.items():
                     results[gen_id]["2D"] = {}
@@ -112,9 +114,12 @@ while True:
                         xH, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
                         yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
                         K = katz(series, 2)
+                        Mx, My = mean_pos(series, 2)
                         results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} Hurst Exponent": xH,
                                                           f"{mapping[3] + mapping[4]} Hurst Exponent": yH,
-                                                          f"Katz Dimension": K}
+                                                          f"Katz Dimension": K,
+                                                          f"Mean {mapping[0] + mapping[1]} Position": Mx,
+                                                          f"Mean {mapping[3] + mapping[4]} Position": My}
 
                 for gen_id, series in three_d.items():
                     results[gen_id]["3D"] = {}
@@ -129,11 +134,14 @@ while True:
                     yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
                     zH, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
                     K = katz(series, 2)
+                    Mx, My, Mz = mean_pos(series, 3)
                     results[gen_id]["3D"]["ACG"] = {f"Adenine Hurst Exponent": xH,
                                                     f"Guanine Hurst Exponent": yH,
                                                     f"Cytosine Hurst Exponent": zH,
-                                                    f"Katz Dimension": K}
-                    print(len(results[gen_id]))
+                                                    f"Katz Dimension": K,
+                                                    f"Mean A Position": Mx,
+                                                    f"Mean G Position": My,
+                                                    f"Mean C Position": Mz}
 
                     for gen_id, dimensions in results.items():
                         print(gen_id + ":")
