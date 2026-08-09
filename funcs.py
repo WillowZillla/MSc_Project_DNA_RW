@@ -2,6 +2,7 @@ from urllib.request import urlretrieve
 import zipfile as zf
 import math
 import json
+import os
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -182,17 +183,25 @@ def katz(sequence: list, dimension: int):
 def file_import(gen_id):
     if gen_id[:3] == "GCA":
         url = (
-            f"https://api.ncbi.nlm.nih.gov/datasets/v2/genome/{gen_id}/download?include_annotation_type=FASTA_RNA"
+            f"https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/{gen_id}/download?include_annotation_type=GENOME_FASTA"
         )
         filename = f"static/{gen_id}.zip"
         urlretrieve(url, filename)
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
             seq.extract("ncbi_dataset/data/assembly_data_report.jsonl", f"sequences/{gen_id}")
-            with open("assembly_data_report.jsonl", "r") as f:
+            with open(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl", "r") as f:
                 assembly = json.load(f)
                 assembly_name = assembly["assemblyInfo"]["assemblyName"]
-            seq.extract(f"ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna", path=f"sequences/{gen_id}")
+            seq.extract(f"ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
+                        path=f"sequences/{gen_id}")
+        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
+                  f"sequences/{gen_id}/rna.fna")
+        os.remove(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl")
+        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}")
+        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
+        os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
+
     else:
         url = (
             f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{gen_id}/download?include_annotation_type=FASTA_RNA"
@@ -201,10 +210,15 @@ def file_import(gen_id):
         urlretrieve(url, filename)
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
-            seq.extract("ncbi_dataset/data/rna.fna", path=f"sequences/{gen_id}")
+            seq.extract("ncbi_dataset/data/rna.fna",
+                        path=f"sequences/{gen_id}")
+        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/rna.fna",
+                  f"sequences/{gen_id}/rna.fna")
+        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
+        os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
 
 def seq_extract(gen_id):
-    with open(f"sequences/{gen_id}/ncbi_dataset/data/rna.fna", "r") as rna:
+    with open(f"sequences/{gen_id}/rna.fna", "r") as rna:
         raw_seq = rna.read().splitlines()
         sequence = ""
         first = False

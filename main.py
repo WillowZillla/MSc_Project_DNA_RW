@@ -39,31 +39,14 @@ while True:
                     print(f"{mapping} Katz dimension: {k}")
 
 
-                    fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, 1, layout="constrained")
+                    fig, (ax0, ax1) = plt.subplots(2, 1, layout="constrained")
                     plt.title = gen_id+" "+mapping
                     ax0.set_xlabel("base number")
                     ax0.set_ylabel("static time series")
                     ax0.plot(series)
                     ax0.set_xlabel("Frequency")
                     ax0.set_ylabel("V2/Hz")
-                    ax1.psd(series, NFFT=len(series), pad_to=256)
-                    Pxx, freq = plt.psd(series, NFFT=len(series), pad_to=256)   # get all graphs on one image to show it
-                    print(Pxx)
-                    print(freq)
-                    log_pxx = []
-                    log_freq = []
-                    for element in Pxx:
-                        log_pxx.append(math.log(element))
-                    # for element in freq:
-                    #     if element == 0:
-                    #         log_freq.append(0)
-                    #     else:
-                    #         log_freq.append(math.log(element))
-                    ax1.set_xscale("log")
-                    ax2.plot(log_pxx)
-                    ax2.set_xscale("log")
-                    ax3.plot(freq, log_pxx)
-                    ax3.set_xscale("log")
+                    ax1.psd(series, NFFT=16384)   # get all graphs on one image to show it
                     plt.show()
 
 
@@ -174,14 +157,15 @@ while True:
                                                     f"Mean G Position": My,
                                                     f"Mean C Position": Mz}
 
-                    for gen_id, dimensions in results.items():
-                        print(gen_id + ":")
-                        for dimension, mappings in dimensions.items():
-                            print(f"* {dimension}:")
-                            for mapping, exps in mappings.items():
-                                print(f"\t* {mapping}:")
-                                for exp, value in exps.items():
-                                    print(f"\t\t-{exp} = {value}")
+
+                    # for gen_id, dimensions in results.items():
+                    #     print(gen_id + ":")
+                    #     for dimension, mappings in dimensions.items():
+                    #         print(f"* {dimension}:")
+                    #         for mapping, exps in mappings.items():
+                    #             print(f"\t* {mapping}:")
+                    #             for exp, value in exps.items():
+                    #                 print(f"\t\t-{exp} = {value}")
 
                     # Don't want to have this many graphs show up, especially if its like 200 sequences
 
