@@ -39,21 +39,31 @@ while True:
                     print(f"{mapping} Katz dimension: {k}")
 
 
-                    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, layout="constrained")
+                    fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, 1, layout="constrained")
                     plt.title = gen_id+" "+mapping
                     ax0.set_xlabel("base number")
                     ax0.set_ylabel("static time series")
                     ax0.plot(series)
-                    if len(series)<256:
-                        ax1.psd(series, NFFT=len(series))
-                    else:
-                        ax1.psd(series, NFFT=256)# get all graphs on one image to show it
-                    ax1.set_xscale("log")
-                    f, Pxx = sp.periodogram(series)
-                    ax2.plot(Pxx)
-                    ax2.set_xscale("log")
                     ax0.set_xlabel("Frequency")
                     ax0.set_ylabel("V2/Hz")
+                    ax1.psd(series, NFFT=len(series), pad_to=256)
+                    Pxx, freq = plt.psd(series, NFFT=len(series), pad_to=256)   # get all graphs on one image to show it
+                    print(Pxx)
+                    print(freq)
+                    log_pxx = []
+                    log_freq = []
+                    for element in Pxx:
+                        log_pxx.append(math.log(element))
+                    # for element in freq:
+                    #     if element == 0:
+                    #         log_freq.append(0)
+                    #     else:
+                    #         log_freq.append(math.log(element))
+                    ax1.set_xscale("log")
+                    ax2.plot(log_pxx)
+                    ax2.set_xscale("log")
+                    ax3.plot(freq, log_pxx)
+                    ax3.set_xscale("log")
                     plt.show()
 
 
@@ -89,6 +99,27 @@ while True:
                 for gen_id in gen_ids_list:
                     file_import(gen_id)
                     sequence = seq_extract(gen_id)
+                    A, C, G, T = 0, 0, 0, 0
+                    for base in sequence:
+                        match base:
+                            case "A":
+                                A+=1
+                            case "G":
+                                G+=1
+                            case "C":
+                                C+=1
+                            case "T":
+                                T+=1
+                    A = A / len(sequence)*100
+                    C = C / len(sequence) * 100
+                    T = T / len(sequence) * 100
+                    G = G / len(sequence) * 100
+                    print(f"Sequence Composition:\n"
+                          f"\t* A: {round(A, 2)}%\n"
+                          f"\t* C: {round(C, 2)}%\n"
+                          f"\t* T: {round(T, 2)}%\n"
+                          f"\t* G: {round(G, 2)}%\n"
+                          f"Total: {A+G+C+T}%")
                     one_d[gen_id]= one_dimension(sequence)
                     two_d[gen_id] = two_dimension(sequence)
                     three_d[gen_id] = three_dimension(sequence)
