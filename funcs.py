@@ -31,9 +31,9 @@ def one_dimension(sequence):
 
 def two_dimension(sequence):
     rw = {}
-    rw["at-cg"] = [[],[]]
-    rw["ag-ct"] = [[], []]
-    rw["ac-tg"] = [[], []]
+    rw["AT-CG"] = [[],[]]
+    rw["AG-CT"] = [[], []]
+    rw["AC-GT"] = [[], []]
     atcg_x_tracker = 0
     atcg_y_tracker = 0
     actg_x_tracker = 0
@@ -58,12 +58,12 @@ def two_dimension(sequence):
                 atcg_x_tracker -= 1
                 actg_y_tracker += 1
                 agct_y_tracker += 1
-        rw["at-cg"][0].append(atcg_x_tracker)
-        rw["at-cg"][1].append(atcg_y_tracker)
-        rw["ag-ct"][0].append(agct_x_tracker)
-        rw["ag-ct"][1].append(agct_y_tracker)
-        rw["ac-tg"][0].append(actg_x_tracker)
-        rw["ac-tg"][1].append(actg_y_tracker)
+        rw["AT-CG"][0].append(atcg_x_tracker)
+        rw["AT-CG"][1].append(atcg_y_tracker)
+        rw["AG-CT"][0].append(agct_x_tracker)
+        rw["AG-CT"][1].append(agct_y_tracker)
+        rw["AC-GT"][0].append(actg_x_tracker)
+        rw["AC-GT"][1].append(actg_y_tracker)
     return rw
 
 def three_dimension(sequence):
@@ -195,9 +195,11 @@ def file_import(gen_id):
                 assembly_name = assembly["assemblyInfo"]["assemblyName"]
             seq.extract(f"ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
                         path=f"sequences/{gen_id}")
+
+        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl",
+                  f"sequences/{gen_id}/assembly_data_report.jsonl")
         os.rename(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
                   f"sequences/{gen_id}/rna.fna")
-        os.remove(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl")
         os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}")
         os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
         os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
@@ -211,7 +213,12 @@ def file_import(gen_id):
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
             seq.extract("ncbi_dataset/data/rna.fna",
-                        path=f"sequences/{gen_id}")
+                        f"sequences/{gen_id}")
+            seq.extract("ncbi_dataset/data/assembly_data_report.jsonl",
+                        f"sequences/{gen_id}")
+
+        os.rename(f"sequence/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl",
+                  f"sequence/{gen_id}/assembly_data_report.jsonl")
         os.rename(f"sequences/{gen_id}/ncbi_dataset/data/rna.fna",
                   f"sequences/{gen_id}/rna.fna")
         os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
@@ -231,3 +238,9 @@ def seq_extract(gen_id):
             else:
                 sequence = sequence + line
         return sequence
+
+def get_name(gen_id):
+    with open(f"sequence/{gen_id}/assembly_data_report.jsonl", "r") as n:
+        assembly = json.load(n)
+        assembly_name = assembly["assemblyInfo"]["assemblyName"]
+    return assembly_name
