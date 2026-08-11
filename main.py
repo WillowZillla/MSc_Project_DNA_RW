@@ -4,6 +4,7 @@ from funcs import *
 import hurst
 import scipy.signal as sp
 import csv
+from fathon
 
 
 while True:
@@ -121,7 +122,7 @@ while True:
                         results[gen_id]["1D"][mapping]={f"Hurst Exponent": H,
                                                         f"Katz Dimension": K,
                                                         f"Mean Position": M}
-                    print(f"{gen_id}\t\t{round((len(gen_ids_list)/(gen_ids_list.index(gen_id)+1))*100, 2)}%")
+                    print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
 
                 print("1 dimensional analysis complete!")
                 print("\n###############################\nStarting 2 dimensional analysis...\n###############################\n")
@@ -143,7 +144,7 @@ while True:
                                                           f"Katz Dimension": K,
                                                           f"Mean {mapping[0] + mapping[1]} Position": Mx,
                                                           f"Mean {mapping[3] + mapping[4]} Position": My}
-                    print(f"{gen_id} \t\t{round((len(gen_ids_list)/(gen_ids_list.index(gen_id)+1))*100, 2)}%")
+                    print(f"{gen_id} \t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
 
                 print("2 dimensional analysis complete!")
                 print("\n###############################\nStarting 3 dimensional analysis...\n###############################\n")
@@ -169,7 +170,7 @@ while True:
                                                     f"Mean A Position": Mx,
                                                     f"Mean G Position": My,
                                                     f"Mean C Position": Mz}
-                    print(f"{gen_id}\t\t{round((len(gen_ids_list)/(gen_ids_list.index(gen_id)+1))*100, 2)}%")
+                    print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
 
                 print("3 dimensional analysis complete!")
                 print("Would you like to name your output directory? y/n")
@@ -214,18 +215,18 @@ while True:
                             table = []
                             for gen_id, data in gen_ids.items():
                                 if first:
-                                    headers = ["Gene ID"]
+                                    headers = ["Gene ID", "Gene"]
                                     for label in data.keys():
                                         headers.append(label)
                                     table.append(headers)
                                     first = False
-                                row = [gen_id]                      # implement get_name() here
+                                row = [gen_id, get_name(gen_id)]                      # implement get_name() here
                                 for datum in data.values():
                                     row.append(datum)
                                 table.append(row)
                             w.writerows(table)
 
-                print("\nYour results should be found in the results directory under the latest output subdirectory :)\n")
+                print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
 
 
                     # for gen_id, dimensions in results.items():
