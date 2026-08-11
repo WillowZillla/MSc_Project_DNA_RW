@@ -1,8 +1,11 @@
 from urllib.request import urlretrieve
 import zipfile as zf
+import numpy as np
 import math
 import json
 import os
+from StatTools.analysis.dfa import dfa
+from StatTools.analysis.utils import analyse_zero_cross_ff
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -179,7 +182,15 @@ def katz(sequence: list, dimension: int):
                 l += d
     k = math.log(n)/(math.log(n) + math.log(max_d/l))
     return k
-    # GCA_027930115.1
+
+def dfa_hurst(sequence):
+    s, f2 = dfa(sequence, degree = 2)
+    f = np.sqrt(f2).reshape(1, -1)
+    s2 = s.reshape(1, -1)
+    hurst_results, _ = analyse_zero_cross_ff(f, s2)
+    h = hurst_results.slopes[0].value
+    return h
+
 def file_import(gen_id):
     if gen_id[:3] == "GCA":
         url = (

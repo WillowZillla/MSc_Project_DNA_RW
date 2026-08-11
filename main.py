@@ -4,7 +4,6 @@ from funcs import *
 import hurst
 import scipy.signal as sp
 import csv
-from fathon
 
 
 while True:
@@ -117,9 +116,11 @@ while True:
                     results[gen_id] = {"1D": {}}
                     for mapping, series in mappings.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
+                        dfa_H = dfa_hurst(series)
                         K = katz(series, 1)
                         M = mean_pos(series, 1)
-                        results[gen_id]["1D"][mapping]={f"Hurst Exponent": H,
+                        results[gen_id]["1D"][mapping]={f"R/S Hurst Exponent": H,
+                                                        f"DFA Hurst Exponent": dfa_H,
                                                         f"Katz Dimension": K,
                                                         f"Mean Position": M}
                     print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
@@ -135,12 +136,16 @@ while True:
                         for i in range(len(series[0])):
                             x_series.append(series[0][i])
                             y_series.append(series[1][i])
-                        xH, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
-                        yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+                        Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                        Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+                        dfa_Hx = dfa_hurst(series)
+                        dfa_Hy = dfa_hurst(series)
                         K = katz(series, 2)
                         Mx, My = mean_pos(series, 2)
-                        results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} Hurst Exponent": xH,
-                                                          f"{mapping[3] + mapping[4]} Hurst Exponent": yH,
+                        results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} R/S Hurst Exponent": Hx,
+                                                          f"{mapping[3] + mapping[4]} R/S Hurst Exponent": Hy,
+                                                          f"{mapping[0] + mapping[1]} DFA Hurst Exponent": dfa_Hx,
+                                                          f"{mapping[3] + mapping[4]} DFA Hurst Exponent": dfa_Hy,
                                                           f"Katz Dimension": K,
                                                           f"Mean {mapping[0] + mapping[1]} Position": Mx,
                                                           f"Mean {mapping[3] + mapping[4]} Position": My}
@@ -158,14 +163,20 @@ while True:
                         x_series.append(series[0][i])
                         y_series.append(series[1][i])
                         z_series.append(series[2][i])
-                    xH, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
-                    yH, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
-                    zH, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                    Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                    Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+                    Hz, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+                    dfa_Hx = dfa_hurst(series)
+                    dfa_Hy = dfa_hurst(series)
+                    dfa_Hz = dfa_hurst(series)
                     K = katz(series, 2)
                     Mx, My, Mz = mean_pos(series, 3)
-                    results[gen_id]["3D"]["ACG"] = {f"Adenine Hurst Exponent": xH,
-                                                    f"Guanine Hurst Exponent": yH,
-                                                    f"Cytosine Hurst Exponent": zH,
+                    results[gen_id]["3D"]["ACG"] = {f"Adenine R/S Hurst Exponent": Hx,
+                                                    f"Guanine R/S Hurst Exponent": Hy,
+                                                    f"Cytosine R/S Hurst Exponent": Hz,
+                                                    f"Adenine DFA Hurst Exponent": dfa_Hx,
+                                                    f"Guanine DFA Hurst Exponent": dfa_Hy,
+                                                    f"Cytosine DFA Hurst Exponent": dfa_Hz,
                                                     f"Katz Dimension": K,
                                                     f"Mean A Position": Mx,
                                                     f"Mean G Position": My,
