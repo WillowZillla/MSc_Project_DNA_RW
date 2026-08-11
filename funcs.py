@@ -9,28 +9,36 @@ from StatTools.analysis.utils import analyse_zero_cross_ff
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
+    cs = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
     tracker = 0
     for base in sequence:
         if base in ["A", "G"]:
             tracker += 1
+            cs["AG-CT"].append(1)
         else:
             tracker -= 1
+            cs["AG-CT"].append(-1)
         rw["AG-CT"].append(tracker)
+
     tracker = 0
     for base in sequence:
         if base in ["A", "C"]:
             tracker += 1
+            cs["AC-GT"].append(1)
         else:
             tracker -= 1
+            cs["AC-GT"].append(-1)
         rw["AC-GT"].append(tracker)
     tracker = 0
     for base in sequence:
         if base in ["A", "T"]:
             tracker += 1
+            cs["AT-CG"].append(1)
         else:
             tracker -= 1
+            cs["AT-CG"].append(-1)
         rw["AT-CG"].append(tracker)
-    return rw
+    return rw, cs
 
 def two_dimension(sequence):
     rw = {}
@@ -183,13 +191,22 @@ def katz(sequence: list, dimension: int):
     k = math.log(n)/(math.log(n) + math.log(max_d/l))
     return k
 
-def dfa_hurst(sequence):
-    s, f2 = dfa(sequence, degree = 2)
-    f = np.sqrt(f2).reshape(1, -1)
-    s2 = s.reshape(1, -1)
-    hurst_results, _ = analyse_zero_cross_ff(f, s2)
-    h = hurst_results.slopes[0].value
-    return h
+def dfa_hurst(s):
+    min_window = 4
+    max_window = len(s)//4
+    demeaned_s = s-np.mean(s)
+    cumsum_s = []
+    tracker = 0
+    for element in demeaned_s:
+        tracker += element
+        cumsum_s.append(tracker)
+    seg_size = np.unique(np.logspace(np.log10(min_window), np.log10(max_window), 20, dtype = int))
+    flux_vals = []
+    for size in seg_size:
+        segments = []
+        for i in range(len(cumsum_s)//size):
+            segments.append(cumsum_s[i*size:(i+1)*size-1])
+
 
 def file_import(gen_id):
     if gen_id[:3] == "GCA":

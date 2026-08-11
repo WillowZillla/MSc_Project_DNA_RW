@@ -105,24 +105,26 @@ while True:
                     #       f"\t* T: {round(T, 2)}%\n"
                     #       f"\t* G: {round(G, 2)}%\n"
                     #       f"Total: {A+G+C+T}%")
-
-                    one_d[gen_id]= one_dimension(sequence)
+                    one_d[gen_id] = {}
+                    one_d[gen_id]["rw"], one_d[gen_id]["cs"] = one_dimension(sequence)
                     two_d[gen_id] = two_dimension(sequence)
                     three_d[gen_id] = three_dimension(sequence)
 
                 print("\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
 
-                for gen_id, mappings in one_d.items():
+                for gen_id, seq_type in one_d.items():
                     results[gen_id] = {"1D": {}}
-                    for mapping, series in mappings.items():
+                    for mapping, series in seq_type["rw"].items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
-                        dfa_H = dfa_hurst(series)
                         K = katz(series, 1)
                         M = mean_pos(series, 1)
                         results[gen_id]["1D"][mapping]={f"R/S Hurst Exponent": H,
-                                                        f"DFA Hurst Exponent": dfa_H,
                                                         f"Katz Dimension": K,
                                                         f"Mean Position": M}
+                    for mapping, series in seq_type["cs"].items():
+                        dfa_H = dfa_hurst(series)
+                        results[gen_id]["1D"][mapping]["DFA Hurst Exponent"] = dfa_H
+
                     print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
 
                 print("1 dimensional analysis complete!")
@@ -138,8 +140,8 @@ while True:
                             y_series.append(series[1][i])
                         Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
                         Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
-                        dfa_Hx = dfa_hurst(series)
-                        dfa_Hy = dfa_hurst(series)
+                        dfa_Hx = dfa_hurst(x_series)
+                        dfa_Hy = dfa_hurst(y_series)
                         K = katz(series, 2)
                         Mx, My = mean_pos(series, 2)
                         results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} R/S Hurst Exponent": Hx,
@@ -166,9 +168,9 @@ while True:
                     Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
                     Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
                     Hz, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
-                    dfa_Hx = dfa_hurst(series)
-                    dfa_Hy = dfa_hurst(series)
-                    dfa_Hz = dfa_hurst(series)
+                    dfa_Hx = dfa_hurst(x_series)
+                    dfa_Hy = dfa_hurst(y_series)
+                    dfa_Hz = dfa_hurst(z_series)
                     K = katz(series, 2)
                     Mx, My, Mz = mean_pos(series, 3)
                     results[gen_id]["3D"]["ACG"] = {f"Adenine R/S Hurst Exponent": Hx,
