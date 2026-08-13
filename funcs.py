@@ -6,39 +6,41 @@ import json
 import os
 from StatTools.analysis.dfa import dfa
 from StatTools.analysis.utils import analyse_zero_cross_ff
+import matplotlib.pyplot as plt
+from scipy import stats
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
-    cs = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
+    # cs = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
     tracker = 0
     for base in sequence:
         if base in ["A", "G"]:
             tracker += 1
-            cs["AG-CT"].append(1)
+            # cs["AG-CT"].append(1)
         else:
             tracker -= 1
-            cs["AG-CT"].append(-1)
+            # cs["AG-CT"].append(-1)
         rw["AG-CT"].append(tracker)
 
     tracker = 0
     for base in sequence:
         if base in ["A", "C"]:
             tracker += 1
-            cs["AC-GT"].append(1)
+            # cs["AC-GT"].append(1)
         else:
             tracker -= 1
-            cs["AC-GT"].append(-1)
+            # cs["AC-GT"].append(-1)
         rw["AC-GT"].append(tracker)
     tracker = 0
     for base in sequence:
         if base in ["A", "T"]:
             tracker += 1
-            cs["AT-CG"].append(1)
+            # cs["AT-CG"].append(1)
         else:
             tracker -= 1
-            cs["AT-CG"].append(-1)
+            # cs["AT-CG"].append(-1)
         rw["AT-CG"].append(tracker)
-    return rw, cs
+    return rw#, cs
 
 def two_dimension(sequence):
     rw = {}
@@ -192,6 +194,7 @@ def katz(sequence: list, dimension: int):
     return k
 
 def dfa_hurst(s):
+    s = np.array(s)
     min_window = 4
     max_window = len(s)//4
     demeaned_s = s-np.mean(s)
@@ -201,12 +204,24 @@ def dfa_hurst(s):
         tracker += element
         cumsum_s.append(tracker)
     seg_size = np.unique(np.logspace(np.log10(min_window), np.log10(max_window), 20, dtype = int))
-    flux_vals = []
+    fn = []
     for size in seg_size:
         segments = []
-        for i in range(len(cumsum_s)//size):
-            segments.append(cumsum_s[i*size:(i+1)*size-1])
-
+        for i in range(0, len(cumsum_s), size):
+            segments.append(cumsum_s[i:i+size])
+        rms_vals = []
+        for segment in segments:
+            if len(segment) == 1:
+                continue
+            x = np.arange(len(segment))
+            fit = np.polyfit(x, segment, 1)
+            rms = np.sqrt(np.mean((segment - np.polyval(fit, x))**2))
+            rms_vals.append(rms)
+        fn.append(np.mean(rms_vals))
+    x = np.log10(seg_size)
+    y = np.log10(fn)
+    slope, intercept, r, p, stderr = stats.linregress(x, y)
+    return slope
 
 def file_import(gen_id):
     if gen_id[:3] == "GCA":

@@ -3,8 +3,10 @@ from mpl_toolkits import mplot3d
 from funcs import *
 import hurst
 import scipy.signal as sp
+from scipy import stats
 import csv
-
+import kneed as kn
+from fooof import FOOOF
 
 while True:
     try:
@@ -29,6 +31,7 @@ while True:
                 three_d_series = three_dimension(sequence)
                 for mapping, series in one_d_series.items():
                     H, c, data = hurst.compute_Hc(series = series, kind = "random_walk", simplified = True)
+                    print(f"Sequence length: {len(series)}")
                     print(f"{mapping} Hurst Exponent: {H}")
                     if H>0.55:
                         print("Persistent trend")
@@ -38,18 +41,74 @@ while True:
                         print("Random Walk")
                     k = katz(series, 1)
                     print(f"{mapping} Katz dimension: {k}")
-
-
-                    fig, (ax0, ax1) = plt.subplots(2, 1, layout="constrained")
+                    dfa_H = dfa_hurst(series)
+                    print(f"{mapping} DFA exponent: {dfa_H}")
+                    pxx, freq = plt.psd(series, NFFT=16384)
+                    plt.close()
+                    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, layout="constrained")
                     plt.title = gen_id+" "+mapping
                     ax0.set_xlabel("base number")
                     ax0.set_ylabel("static time series")
                     ax0.plot(series)
-                    ax0.set_xlabel("Frequency")
-                    ax0.set_ylabel("V2/Hz")
-                    ax1.psd(series, NFFT=16384)   # get all graphs on one image to show it
-                    plt.show()
 
+                    ax1.set_xlabel("Frequency")
+                    ax1.set_ylabel("V2/Hz")
+                    ax1.psd(series, NFFT=16384)   # get all graphs on one image to show it
+
+
+                    ax1.set_xlabel("Frequency (log scale)")
+                    ax1.set_ylabel("V2/Hz")
+                    # ax2.psd(series, NFFT=8192)
+                    ax1.set_xscale("log")
+
+                    ax2.set_xlabel("log(Frequency)")
+                    ax2.set_ylabel("V2/Hz")
+                    type1_freq = np.arange(0, 1+1/(len(pxx)), 1/(len(pxx)))
+                    type1_freq = np.delete(type1_freq, 0)
+                    log_type1_freq = np.log(type1_freq)
+                    log_type1_pxx = np.log(pxx)
+                    ax2.plot(log_type1_freq, log_type1_pxx)
+
+                    # ax2.set_xlabel("log(Frequency)")
+                    # ax2.set_ylabel("V2/Hz")
+                    # type2_freq = np.delete(freq, 0)
+                    # type2_pxx = np.delete(pxx, 0)
+                    # log_type2_freq = np.log(type2_freq)
+                    # log_type2_pxx = np.log(type2_pxx)
+                    # ax2.plot(log_type2_freq, log_type2_pxx)
+
+                    # low_knee = len(freq)//100
+                    # freq_knee = freq[low_knee:]
+                    # pxx_knee = np.log(pxx)[low_knee:]
+                    #
+                    # print(pxx_knee)
+                    #
+                    # raw_kn = kn.KneeLocator(freq_knee, pxx_knee, curve = "convex", direction = "decreasing")
+                    # log_kn = kn.KneeLocator(np.log(freq_knee), pxx_knee, curve = "convex", direction = "decreasing")
+                    #
+                    # print(f"Unlogged knee:\n"
+                    #       f" x = {raw_kn.knee}, y = {raw_kn.knee_y}")
+                    # print(f"Logged knee:\n"
+                    #       f" x = {log_kn.knee}, y = {log_kn.knee_y}\n"
+                    #       f" log(x) = {np.log(raw_kn.knee)}, log(y) = {np.log(raw_kn.knee_y)}")
+
+                    x = log_type1_freq[0:len(log_type1_freq)//10]
+                    y = log_type1_pxx[0:len(log_type1_freq)//10]
+
+
+                    slope, intercept, r, p, std_err = stats.linregress(x, y)
+                    print(intercept, slope)
+                    beta = []
+                    for x in log_type1_freq:
+                        beta.append(slope*x+intercept)
+                    ax2.plot(log_type1_freq, beta, color = "red")
+
+                    # fm = FOOOF()
+                    # report = fm.report(freq, pxx, [freq[0], freq[-1]])
+                    # print(type(report))
+                    # print(report)
+
+                    plt.show()
 
                 for mapping, series in two_d_series.items():
                     plt.title = mapping
@@ -62,7 +121,6 @@ while True:
                 ax.plot3D(three_d_series[0], three_d_series[1], three_d_series[2])
                 ax.set_title(gen_id)
                 plt.show()
-
 
             case 2:
                 try:
@@ -106,25 +164,23 @@ while True:
                     #       f"\t* G: {round(G, 2)}%\n"
                     #       f"Total: {A+G+C+T}%")
                     one_d[gen_id] = {}
-                    one_d[gen_id]["rw"], one_d[gen_id]["cs"] = one_dimension(sequence)
+                    one_d[gen_id] = one_dimension(sequence)
                     two_d[gen_id] = two_dimension(sequence)
                     three_d[gen_id] = three_dimension(sequence)
 
                 print("\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
 
-                for gen_id, seq_type in one_d.items():
+                for gen_id, mappings in one_d.items():
                     results[gen_id] = {"1D": {}}
-                    for mapping, series in seq_type["rw"].items():
+                    for mapping, series in mappings.items():
                         H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
                         K = katz(series, 1)
                         M = mean_pos(series, 1)
+                        dfa_H = dfa_hurst(series)
                         results[gen_id]["1D"][mapping]={f"R/S Hurst Exponent": H,
+                                                        f"DFA Hurst Exponent": dfa_H,
                                                         f"Katz Dimension": K,
                                                         f"Mean Position": M}
-                    for mapping, series in seq_type["cs"].items():
-                        dfa_H = dfa_hurst(series)
-                        results[gen_id]["1D"][mapping]["DFA Hurst Exponent"] = dfa_H
-
                     print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
 
                 print("1 dimensional analysis complete!")
@@ -240,7 +296,6 @@ while True:
                             w.writerows(table)
 
                 print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
-
 
                     # for gen_id, dimensions in results.items():
                     #     print(gen_id + ":")
