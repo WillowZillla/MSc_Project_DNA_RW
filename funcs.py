@@ -190,7 +190,7 @@ def katz(sequence: list, dimension: int):
                 z = sequence[2][i] - sequence[2][i + 1]
                 d = math.sqrt(x**2 + y**2 + z**2)
                 l += d
-    k = math.log(n)/(math.log(n) + math.log(max_d/l))
+    k = math.log10(n)/(math.log10(n) + math.log10(max_d/l))
     return k
 
 def dfa_hurst(s):
@@ -217,6 +217,7 @@ def dfa_hurst(s):
             fit = np.polyfit(x, segment, 1)
             rms = np.sqrt(np.mean((segment - np.polyval(fit, x))**2))
             rms_vals.append(rms)
+        #fn.append(np.sqrt(np.mean(np.square(rms_vals))))
         fn.append(np.mean(rms_vals))
     x = np.log10(seg_size)
     y = np.log10(fn)
