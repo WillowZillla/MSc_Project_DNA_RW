@@ -8,6 +8,10 @@ from StatTools.analysis.dfa import dfa
 from StatTools.analysis.utils import analyse_zero_cross_ff
 import matplotlib.pyplot as plt
 from scipy import stats
+from scikit_learn.peprocessing import StandardScaler
+from scikit_learn.metrics import silhouette_score
+from scikit_learn.decomposition import PCA
+from scikit_learn.cluster import KMean
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -295,3 +299,14 @@ def get_name(gen_id):
             org_name = report["commonName"]
             gene_name = report["description"]
     return org_name + " " + gene_name
+
+def k_means(results):
+    labels = [get_name(gen_id) for gen_id in results.keys()]
+    all_params = []
+    for gen_id, dimensions in results.items():
+        params = []
+        for dimension, mappings in dimensions.items():
+            for mapping, params in mappings.items():
+                for param in params.values():
+                   params.append(param)
+        all_params.append(params)
