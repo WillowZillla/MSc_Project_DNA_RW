@@ -299,3 +299,35 @@ def get_name(gen_id):
             org_name = report["commonName"]
             gene_name = report["description"]
     return org_name + " " + gene_name
+
+def k_means(results, test = False):
+    #if test == False:
+    labels = [get_name(gen_id) for gen_id in results.keys()]
+    all_params = []
+    for gen_id, dimensions in results.items():
+        params_ext = []
+        for dimension, mappings in dimensions.items():
+            for mapping, params in mappings.items():
+                for param in params.values():
+                   params_ext.append(param)
+        all_params.append(params_ext)
+    print(all_params)
+    scaler = StandardScaler()
+    all_params_scaled = scaler.fit_transform(all_params)
+    print(all_params_scaled)
+    n_components = min(len(all_params), len(all_params[0]))
+    pca = PCA(n_components)
+    all_params_scaled_pca = pca.fit_transform(all_params_scaled)
+    print(all_params_scaled_pca)
+    max_silhouette = float('-inf')
+    opt_n = 0
+    opt_clusters = None
+    for n in range(2, min(25, len(all_params))):
+        kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params_scaled_pca)
+        print(kmeans_clusters)
+        silhouette = silhouette_score(all_params_scaled_pca, kmeans_clusters)
+        max_silhouette = max(max_silhouette, silhouette)
+        if max_silhouette==silhouette:
+            opt_n = n
+            opt_clusters = kmeans_clusters
+    return opt_n, opt_clusters, max_silhouette

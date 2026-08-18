@@ -299,6 +299,10 @@ while True:
 
                 print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
 
+                opt_n, opt_clusters, silhouette_score = k_means(results)
+                print(f"A total of {opt_n} clusters were found with a silhouette score of {silhouette_score}:")
+                print(f"opt_clusters = {opt_clusters}")
+
                     # for gen_id, dimensions in results.items():
                     #     print(gen_id + ":")
                     #     for dimension, mappings in dimensions.items():
