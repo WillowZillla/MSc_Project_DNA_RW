@@ -133,7 +133,6 @@ while True:
                           "please upload a comma separated list of gene IDs (e.g. 3208, 4288, 2764) "
                           "in a text file named ID.txt to the working directory")
                     continue
-                sequence = 'ATGGTGCATCTGACTCCTGAGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGCTGCTGGTGGTCTACCCTTGGACCCAGAGGTTCTTTGAGTCCTTTGGGGATCTGTCCACTCCTGATGCTGTTATGGGCAACCCTAAGGTGAAGGCTCATGGCAAGAAAGTGCTCGGTGCCTTTAGTGATGGCCTGGCTCACCTGGACAACCTCAAGGGCACCTTTGCCACACTGAGTGAGCTGCACTGTGACAAGCTGCACGTGGATCCTGAGAACTTCAGGCTCCTGGGCAACGTGCTGGTCTGTGTGCTGGCCCATCACTTTGGCAAAGAATTCACCCCACCAGTGCAGGCTGCCTATCAGAAAGTGGTGGCTGGTGTGGCTAATGCCCTGGCCCACAAGTACCACTAA'
                 gen_ids_list = gen_ids.split(", ")
                 one_d = {}
                 two_d = {}
@@ -141,9 +140,15 @@ while True:
                 results = {}
 
                 for gen_id in gen_ids_list:
-                    file_import(gen_id)
-                    # sequence = seq_extract(gen_id)
-                    sequence = 'ATGGTGCATCTGACTCCTGAGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGCTGCTGGTGGTCTACCCTTGGACCCAGAGGTTCTTTGAGTCCTTTGGGGATCTGTCCACTCCTGATGCTGTTATGGGCAACCCTAAGGTGAAGGCTCATGGCAAGAAAGTGCTCGGTGCCTTTAGTGATGGCCTGGCTCACCTGGACAACCTCAAGGGCACCTTTGCCACACTGAGTGAGCTGCACTGTGACAAGCTGCACGTGGATCCTGAGAACTTCAGGCTCCTGGGCAACGTGCTGGTCTGTGTGCTGGCCCATCACTTTGGCAAAGAATTCACCCCACCAGTGCAGGCTGCCTATCAGAAAGTGGTGGCTGGTGTGGCTAATGCCCTGGCCCACAAGTACCACTAA'
+                    failed = file_import(gen_id)
+                    print(gen_id)
+                    print(failed)
+                    if failed == 1:
+                        gen_ids_list.remove(gen_id)
+                        print(f"{gen_id} skipped")
+                    else:
+                        sequence = seq_extract(gen_id)
+
                     # A, C, G, T = 0, 0, 0, 0
                     # for base in sequence:
                     #     match base:
@@ -165,10 +170,11 @@ while True:
                     #       f"\t* T: {round(T, 2)}%\n"
                     #       f"\t* G: {round(G, 2)}%\n"
                     #       f"Total: {A+G+C+T}%")
-                    one_d[gen_id] = {}
-                    one_d[gen_id] = one_dimension(sequence)
-                    two_d[gen_id] = two_dimension(sequence)
-                    three_d[gen_id] = three_dimension(sequence)
+
+                        one_d[gen_id] = {}
+                        one_d[gen_id] = one_dimension(sequence)
+                        two_d[gen_id] = two_dimension(sequence)
+                        three_d[gen_id] = three_dimension(sequence)
 
                 print("\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
 
@@ -231,7 +237,7 @@ while True:
                     dfa_Hz = dfa_hurst(z_series)
                     K = katz(series, 2)
                     Mx, My, Mz = mean_pos(series, 3)
-                    results[gen_id]["3D"]["ACG"] = {f"Adenine R/S Hurst Exponent": Hx,
+                    results[gen_id]["3D"]["AGC"] = {f"Adenine R/S Hurst Exponent": Hx,
                                                     f"Guanine R/S Hurst Exponent": Hy,
                                                     f"Cytosine R/S Hurst Exponent": Hz,
                                                     f"Adenine DFA Hurst Exponent": dfa_Hx,
@@ -253,7 +259,7 @@ while True:
 
                 print("Saving results...")
 
-                file_data = {"1D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "2D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "3D": {"ACG": {}}}
+                file_data = {"1D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "2D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "3D": {"AGC": {}}}
                 for gen_id, dimensions in results.items():
                     for dimension, mappings in dimensions.items():
                         for mapping, data in mappings.items():
@@ -261,7 +267,13 @@ while True:
                             for label, datum in data.items():
                                 file_data[dimension][mapping][gen_id][label] = datum
 
+
+
+
                 iteration = len(os.listdir("results"))
+                results_json = json.dumps(results, indent=4)
+                with open(f"results{iteration}.json", "w") as r:
+                    r.write(results_json)
                 if name:
                     file_path = f"results/{name}"
                 else:
@@ -299,9 +311,9 @@ while True:
 
                 print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
 
-                opt_n, opt_clusters, silhouette_score = k_means(results)
-                print(f"A total of {opt_n} clusters were found with a silhouette score of {silhouette_score}:")
-                print(f"opt_clusters = {opt_clusters}")
+                # opt_n, opt_clusters, silhouette_score = k_means(results)
+                # print(f"A total of {opt_n} clusters were found with a silhouette score of {silhouette_score}:")
+                # print(f"opt_clusters = {opt_clusters}")
 
                     # for gen_id, dimensions in results.items():
                     #     print(gen_id + ":")

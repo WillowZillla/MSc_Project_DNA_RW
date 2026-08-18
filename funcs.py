@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+import requests
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -237,21 +238,24 @@ def file_import(gen_id):
         urlretrieve(url, filename)
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
-            seq.extract("ncbi_dataset/data/assembly_data_report.jsonl", f"sequences/{gen_id}")
-            with open(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl", "r") as f:
-                assembly = json.load(f)
-                assembly_name = assembly["assemblyInfo"]["assemblyName"]
-            seq.extract(f"ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
-                        path=f"sequences/{gen_id}")
-
-        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl",
-                  f"sequences/{gen_id}/data_report.jsonl")
-        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
-                  f"sequences/{gen_id}/rna.fna")
-        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}")
-        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
-        os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
-
+            try:
+                seq.extract("ncbi_dataset/data/assembly_data_report.jsonl", f"sequences/{gen_id}")
+                with open(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl", "r") as f:
+                    assembly = json.load(f)
+                    assembly_name = assembly["assemblyInfo"]["assemblyName"]
+                seq.extract(f"ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
+                            path=f"sequences/{gen_id}")
+                os.rename(f"sequences/{gen_id}/ncbi_dataset/data/assembly_data_report.jsonl",
+                          f"sequences/{gen_id}/data_report.jsonl")
+                os.rename(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}/{gen_id}_{assembly_name}_genomic.fna",
+                          f"sequences/{gen_id}/rna.fna")
+                os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data/{gen_id}")
+                os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
+                os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
+                return 0
+            except KeyError:
+                print(f"Sorry {gen_id} could not be retrieved due to a formatting error")
+                return 1
     else:
         url = (
             f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{gen_id}/download?include_annotation_type=FASTA_RNA"
@@ -260,17 +264,22 @@ def file_import(gen_id):
         urlretrieve(url, filename)
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
-            seq.extract("ncbi_dataset/data/rna.fna",
-                        f"sequences/{gen_id}")
-            seq.extract("ncbi_dataset/data/data_report.jsonl",
-                        f"sequences/{gen_id}")
+            try:
+                seq.extract("ncbi_dataset/data/rna.fna",
+                            f"sequences/{gen_id}")
+                seq.extract("ncbi_dataset/data/data_report.jsonl",
+                            f"sequences/{gen_id}")
 
-        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/data_report.jsonl",
-                  f"sequences/{gen_id}/data_report.jsonl")
-        os.rename(f"sequences/{gen_id}/ncbi_dataset/data/rna.fna",
-                  f"sequences/{gen_id}/rna.fna")
-        os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
-        os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
+                os.rename(f"sequences/{gen_id}/ncbi_dataset/data/data_report.jsonl",
+                          f"sequences/{gen_id}/data_report.jsonl")
+                os.rename(f"sequences/{gen_id}/ncbi_dataset/data/rna.fna",
+                          f"sequences/{gen_id}/rna.fna")
+                os.rmdir(f"sequences/{gen_id}/ncbi_dataset/data")
+                os.rmdir(f"sequences/{gen_id}/ncbi_dataset")
+                return 0
+            except KeyError:
+                print(f"Sorry {gen_id} could not be retrieved due to a formatting error")
+                return 1
 
 def seq_extract(gen_id):
     with open(f"sequences/{gen_id}/rna.fna", "r") as rna:
@@ -301,33 +310,59 @@ def get_name(gen_id):
     return org_name + " " + gene_name
 
 def k_means(results, test = False):
-    #if test == False:
-    labels = [get_name(gen_id) for gen_id in results.keys()]
+    #labels = [get_name(gen_id) for gen_id in results.keys()]
     all_params = []
-    for gen_id, dimensions in results.items():
-        params_ext = []
-        for dimension, mappings in dimensions.items():
-            for mapping, params in mappings.items():
-                for param in params.values():
-                   params_ext.append(param)
-        all_params.append(params_ext)
+    if test:
+        for gen_id, dimensions in results.items():
+            threed_params = [results[gen_id]["3D"]["AGC"]["Adenine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Guanine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Cytosine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Katz Dimension"]]
+            all_params.append(threed_params)
+    if not test:
+        for gen_id, dimensions in results.items():
+            params_ext = []
+            for dimension, mappings in dimensions.items():
+                for mapping, params in mappings.items():
+                    for param in params.values():
+                       params_ext.append(param)
+            all_params.append(params_ext)
     print(all_params)
-    scaler = StandardScaler()
-    all_params_scaled = scaler.fit_transform(all_params)
-    print(all_params_scaled)
-    n_components = min(len(all_params), len(all_params[0]))
-    pca = PCA(n_components)
-    all_params_scaled_pca = pca.fit_transform(all_params_scaled)
-    print(all_params_scaled_pca)
+    all_params = np.array(all_params)
+    # scaler = StandardScaler()
+    # all_params_scaled = scaler.fit_transform(all_params)
+    # print(all_params_scaled)
+    # n_components = min(all_params.shape[0], all_params.shape[1])
+    # pca = PCA(n_components)
+    # all_params_pca = pca.fit_transform(all_params)
+    # print(all_params_pca)
     max_silhouette = float('-inf')
     opt_n = 0
     opt_clusters = None
     for n in range(2, min(25, len(all_params))):
-        kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params_scaled_pca)
+        kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params)
         print(kmeans_clusters)
-        silhouette = silhouette_score(all_params_scaled_pca, kmeans_clusters)
+        silhouette = silhouette_score(all_params, kmeans_clusters)
         max_silhouette = max(max_silhouette, silhouette)
         if max_silhouette==silhouette:
             opt_n = n
             opt_clusters = kmeans_clusters
     return opt_n, opt_clusters, max_silhouette
+
+# with open("results.json", "r") as r:
+#     results = json.load(r)
+#
+# opt_n, opt_clusters, max_silhouette = k_means(results, test = True)
+#
+# print(f"{opt_n} clusters found with a silhouette score of {max_silhouette}:")
+# labelled_clusters = {}
+# gen_ids = list(results.keys())
+# print(gen_ids)
+# for i in range(opt_n):
+#     labelled_clusters[i] = [gen_ids[j] for j in range(len(results)) if opt_clusters[j] == i]
+#
+# for cluster, genes in labelled_clusters.items():
+#     print(f"\t* Cluster {cluster}:")
+#     for gene in genes:
+#           print(f"\t\t - {get_name(gene)}")
+
+url = "https://www.ncbi.nlm.nih.gov/nuccore/X80934.1?report=fasta&log$=seqview&format=text"
+filename = "nuccore_test.txt"
+urlretrieve(url, filename)
