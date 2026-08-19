@@ -14,11 +14,13 @@ while True:
                       "1. View the time series graphs and analysis for one gene\n"
                       "2. View the time series analysis for a group of genes "
                       "(please upload a list of RefSeq Gene IDs in ID.txt in the working directory)\n"
-                      "3. Exit\n"))
+                      "3. View the time series analysis for a group of sequences "
+                      "(please upload a list of FASTA formatted sequences in SEQ.txt in the working directory)\n"
+                      "4. Exit\n"))
     except ValueError:
         print("Invalid selection, please input either 1 or 2")
         continue
-    if x in [1, 2, 3]:
+    if x in [1, 2, 3, 4]:
         match x:
             case 1:
                 gen_id = input("GenBank ID: ")
@@ -138,16 +140,38 @@ while True:
                 two_d = {}
                 three_d = {}
                 results = {}
-
+                gen_id_remove = []
                 for gen_id in gen_ids_list:
-                    failed = file_import(gen_id)
+                    failed = 0
                     print(gen_id)
-                    print(failed)
-                    if failed == 1:
-                        gen_ids_list.remove(gen_id)
-                        print(f"{gen_id} skipped")
+                    if gen_id in os.listdir("sequences"):
+                        print(f"{gen_id} already downloaded")
                     else:
-                        sequence = seq_extract(gen_id)
+                        failed = file_import(gen_id)
+                        print(failed)
+                        if failed:
+                            gen_id_remove.append(gen_id)
+                            print(f"{gen_id} skipped")
+                            continue
+                        else:
+                            print(f"{gen_id} downloaded successfully")
+
+                    sequence = seq_extract(gen_id)
+                    for base in sequence:
+                        if base not in ["A", "C", "G", "T"]:
+                            print(f"Sequence error in {get_name(gen_id)} (gene ID {gen_id}), sequence skipped")
+                            gen_id_remove.append(gen_id)
+                            continue
+                    one_d[gen_id] = one_dimension(sequence)
+                    two_d[gen_id] = two_dimension(sequence)
+                    three_d[gen_id] = three_dimension(sequence)
+                    print(f"{gen_id} sequence extracted")
+                for x in gen_id_remove:
+                    gen_ids_list.remove(x)
+                print(gen_ids_list)
+
+                seq_analysis(gen_ids_list, one_d, two_d, three_d)
+
 
                     # A, C, G, T = 0, 0, 0, 0
                     # for base in sequence:
@@ -171,12 +195,52 @@ while True:
                     #       f"\t* G: {round(G, 2)}%\n"
                     #       f"Total: {A+G+C+T}%")
 
-                        one_d[gen_id] = {}
-                        one_d[gen_id] = one_dimension(sequence)
-                        two_d[gen_id] = two_dimension(sequence)
-                        three_d[gen_id] = three_dimension(sequence)
+                # opt_n, opt_clusters, silhouette_score = k_means(results)
+                # print(f"A total of {opt_n} clusters were found with a silhouette score of {silhouette_score}:")
+                # print(f"opt_clusters = {opt_clusters}")
 
-                print("\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
+                    # for gen_id, dimensions in results.items():
+                    #     print(gen_id + ":")
+                    #     for dimension, mappings in dimensions.items():
+                    #         print(f"* {dimension}:")
+                    #         for mapping, exps in mappings.items():
+                    #             print(f"\t* {mapping}:")
+                    #             for exp, value in exps.items():
+                    #                 print(f"\t\t-{exp} = {value}")
+            case 3:
+                try:
+                    with open("SEQ.txt", "r") as f:
+                        sequences = f.readlines()
+                except FileNotFoundError:
+                    print("No file detected, "
+                          "please upload a list of comma separated gene names and sequences (<gene name>: <gene sequence>, etc.) "
+                          "in a text file named SEQ.txt to the working directory")
+                    continue
+                sequences_list = {}
+                seq_names = []
+                seq_remove = []
+                for sequence in sequences:
+                    seqsplit = sequence.strip().split(": ")
+                    for base in seqsplit[1]:
+                        if base not in ["A", "C", "G", "T"]:
+                            print(f"Sequence error in {seqsplit[0]}, sequence skipped")
+                            seq_remove.append(seqsplit[0])
+                    sequences_list[seqsplit[0]] = seqsplit[1]
+                    seq_names.append(seqsplit[0])
+                for name in seq_remove:
+                    del sequences_list[name]
+                one_d = {}
+                two_d = {}
+                three_d = {}
+                results = {}
+                for name, sequence in sequences_list.items():
+                    one_d[name] = one_dimension(sequence)
+                    two_d[name] = two_dimension(sequence)
+                    three_d[name] = three_dimension(sequence)
+                    print(f"{name}: {sequence}")
+
+                print(
+                    "\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
 
                 for gen_id, mappings in one_d.items():
                     results[gen_id] = {"1D": {}}
@@ -185,14 +249,15 @@ while True:
                         K = katz(series, 1)
                         M = mean_pos(series, 1)
                         dfa_H = dfa_hurst(series)
-                        results[gen_id]["1D"][mapping]={f"R/S Hurst Exponent": H,
-                                                        f"DFA Hurst Exponent": dfa_H,
-                                                        f"Katz Dimension": K,
-                                                        f"Mean Position": M}
-                    print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
+                        results[gen_id]["1D"][mapping] = {f"R/S Hurst Exponent": H,
+                                                          f"DFA Hurst Exponent": dfa_H,
+                                                          f"Katz Dimension": K,
+                                                          f"Mean Position": M}
+                    print(f"{gen_id}\t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("1 dimensional analysis complete!")
-                print("\n###############################\nStarting 2 dimensional analysis...\n###############################\n")
+                print(
+                    "\n###############################\nStarting 2 dimensional analysis...\n###############################\n")
 
                 for gen_id, mappings in two_d.items():
                     results[gen_id]["2D"] = {}
@@ -215,10 +280,11 @@ while True:
                                                           f"Katz Dimension": K,
                                                           f"Mean {mapping[0] + mapping[1]} Position": Mx,
                                                           f"Mean {mapping[3] + mapping[4]} Position": My}
-                    print(f"{gen_id} \t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
+                    print(f"{gen_id} \t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("2 dimensional analysis complete!")
-                print("\n###############################\nStarting 3 dimensional analysis...\n###############################\n")
+                print(
+                    "\n###############################\nStarting 3 dimensional analysis...\n###############################\n")
 
                 for gen_id, series in three_d.items():
                     results[gen_id]["3D"] = {}
@@ -247,7 +313,7 @@ while True:
                                                     f"Mean A Position": Mx,
                                                     f"Mean G Position": My,
                                                     f"Mean C Position": Mz}
-                    print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id)+1)/len(gen_ids_list))*100, 2)}%")
+                    print(f"{gen_id}\t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("3 dimensional analysis complete!")
                 print("Would you like to name your output directory? y/n")
@@ -259,7 +325,9 @@ while True:
 
                 print("Saving results...")
 
-                file_data = {"1D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "2D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "3D": {"AGC": {}}}
+                file_data = {"1D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}},
+                             "2D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}},
+                             "3D": {"AGC": {}}}
                 for gen_id, dimensions in results.items():
                     for dimension, mappings in dimensions.items():
                         for mapping, data in mappings.items():
@@ -267,12 +335,9 @@ while True:
                             for label, datum in data.items():
                                 file_data[dimension][mapping][gen_id][label] = datum
 
-
-
-
                 iteration = len(os.listdir("results"))
                 results_json = json.dumps(results, indent=4)
-                with open(f"results{iteration}.json", "w") as r:
+                with open(f"results_{iteration}.json", "w") as r:
                     r.write(results_json)
                 if name:
                     file_path = f"results/{name}"
@@ -298,12 +363,12 @@ while True:
                             table = []
                             for gen_id, data in gen_ids.items():
                                 if first:
-                                    headers = ["Gene ID", "Gene"]
+                                    headers = ["Gene Name"]
                                     for label in data.keys():
                                         headers.append(label)
                                     table.append(headers)
                                     first = False
-                                row = [gen_id, get_name(gen_id)]                      # implement get_name() here
+                                row = [gen_id]
                                 for datum in data.values():
                                     row.append(datum)
                                 table.append(row)
@@ -311,19 +376,9 @@ while True:
 
                 print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
 
-                # opt_n, opt_clusters, silhouette_score = k_means(results)
-                # print(f"A total of {opt_n} clusters were found with a silhouette score of {silhouette_score}:")
-                # print(f"opt_clusters = {opt_clusters}")
 
-                    # for gen_id, dimensions in results.items():
-                    #     print(gen_id + ":")
-                    #     for dimension, mappings in dimensions.items():
-                    #         print(f"* {dimension}:")
-                    #         for mapping, exps in mappings.items():
-                    #             print(f"\t* {mapping}:")
-                    #             for exp, value in exps.items():
-                    #                 print(f"\t\t-{exp} = {value}")
-            case 3:
+
+            case 4:
                 break
     else:
-        print("Invalid selection, please input either 1 or 2")
+        print("Invalid selection, please input either 1, 2, 3 or 4")

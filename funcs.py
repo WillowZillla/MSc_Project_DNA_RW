@@ -4,6 +4,8 @@ import numpy as np
 import math
 import json
 import os
+import hurst
+import csv
 from StatTools.analysis.dfa import dfa
 from StatTools.analysis.utils import analyse_zero_cross_ff
 import matplotlib.pyplot as plt
@@ -12,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-import requests
+#import request
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -366,3 +368,140 @@ def k_means(results, test = False):
 url = "https://www.ncbi.nlm.nih.gov/nuccore/X80934.1?report=fasta&log$=seqview&format=text"
 filename = "nuccore_test.txt"
 urlretrieve(url, filename)
+
+
+def seq_analysis(gen_ids_list, one_d: dict, two_d: dict, three_d: dict):
+    results = {}
+    print("\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
+
+    for gen_id, mappings in one_d.items():
+        results[gen_id] = {"1D": {}}
+        for mapping, series in mappings.items():
+            H, c, data = hurst.compute_Hc(series=series, kind="random_walk", simplified=True)
+            K = katz(series, 1)
+            M = mean_pos(series, 1)
+            dfa_H = dfa_hurst(series)
+            results[gen_id]["1D"][mapping] = {f"R/S Hurst Exponent": H,
+                                              f"DFA Hurst Exponent": dfa_H,
+                                              f"Katz Dimension": K,
+                                              f"Mean Position": M}
+        print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id) + 1) / len(gen_ids_list)) * 100, 2)}%")
+
+    print("1 dimensional analysis complete!")
+    print("\n###############################\nStarting 2 dimensional analysis...\n###############################\n")
+
+    for gen_id, mappings in two_d.items():
+        results[gen_id]["2D"] = {}
+        for mapping, series in mappings.items():
+            x_series = []
+            y_series = []
+            for i in range(len(series[0])):
+                x_series.append(series[0][i])
+                y_series.append(series[1][i])
+            Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+            Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+            dfa_Hx = dfa_hurst(x_series)
+            dfa_Hy = dfa_hurst(y_series)
+            K = katz(series, 2)
+            Mx, My = mean_pos(series, 2)
+            results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} R/S Hurst Exponent": Hx,
+                                              f"{mapping[3] + mapping[4]} R/S Hurst Exponent": Hy,
+                                              f"{mapping[0] + mapping[1]} DFA Hurst Exponent": dfa_Hx,
+                                              f"{mapping[3] + mapping[4]} DFA Hurst Exponent": dfa_Hy,
+                                              f"Katz Dimension": K,
+                                              f"Mean {mapping[0] + mapping[1]} Position": Mx,
+                                              f"Mean {mapping[3] + mapping[4]} Position": My}
+        print(f"{gen_id} \t\t{round(((gen_ids_list.index(gen_id) + 1) / len(gen_ids_list)) * 100, 2)}%")
+
+    print("2 dimensional analysis complete!")
+    print("\n###############################\nStarting 3 dimensional analysis...\n###############################\n")
+
+    for gen_id, series in three_d.items():
+        results[gen_id]["3D"] = {}
+        x_series = []
+        y_series = []
+        z_series = []
+        for i in range(len(series[0])):
+            x_series.append(series[0][i])
+            y_series.append(series[1][i])
+            z_series.append(series[2][i])
+        Hx, xc, xdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+        Hy, yc, ydata = hurst.compute_Hc(series=y_series, kind="random_walk", simplified=True)
+        Hz, zc, zdata = hurst.compute_Hc(series=x_series, kind="random_walk", simplified=True)
+        dfa_Hx = dfa_hurst(x_series)
+        dfa_Hy = dfa_hurst(y_series)
+        dfa_Hz = dfa_hurst(z_series)
+        K = katz(series, 2)
+        Mx, My, Mz = mean_pos(series, 3)
+        results[gen_id]["3D"]["AGC"] = {f"Adenine R/S Hurst Exponent": Hx,
+                                        f"Guanine R/S Hurst Exponent": Hy,
+                                        f"Cytosine R/S Hurst Exponent": Hz,
+                                        f"Adenine DFA Hurst Exponent": dfa_Hx,
+                                        f"Guanine DFA Hurst Exponent": dfa_Hy,
+                                        f"Cytosine DFA Hurst Exponent": dfa_Hz,
+                                        f"Katz Dimension": K,
+                                        f"Mean A Position": Mx,
+                                        f"Mean G Position": My,
+                                        f"Mean C Position": Mz}
+        print(f"{gen_id}\t\t{round(((gen_ids_list.index(gen_id) + 1) / len(gen_ids_list)) * 100, 2)}%")
+
+    print("3 dimensional analysis complete!")
+    print("Would you like to name your output directory? y/n")
+    name_choice = input()
+    if name_choice == "y" or name_choice == "Y":
+        name = input("Directory Name: ")
+    else:
+        name = None
+
+    print("Saving results...")
+
+    file_data = {"1D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}}, "2D": {"AC-GT": {}, "AG-CT": {}, "AT-CG": {}},
+                 "3D": {"AGC": {}}}
+    for gen_id, dimensions in results.items():
+        for dimension, mappings in dimensions.items():
+            for mapping, data in mappings.items():
+                file_data[dimension][mapping][gen_id] = {}
+                for label, datum in data.items():
+                    file_data[dimension][mapping][gen_id][label] = datum
+
+    iteration = len(os.listdir("results"))
+    results_json = json.dumps(results, indent=4)
+    with open(f"results_{iteration}.json", "w") as r:
+        r.write(results_json)
+    if name:
+        file_path = f"results/{name}"
+    else:
+        file_path = f"results/output_{iteration}"
+    i = 1
+    while True:
+        try:
+            os.mkdir(file_path)
+            break
+        except FileExistsError:
+            if i > 1:
+                file_path = file_path[:-3]
+                file_path = file_path + f"({i})"
+            else:
+                file_path = file_path + f"({i})"
+            i += 1
+    for dimension, mappings in file_data.items():
+        for mapping, gen_ids in mappings.items():
+            with open(f"{file_path}/{dimension}_{mapping}.csv", "w") as f:
+                first = True
+                w = csv.writer(f)
+                table = []
+                for gen_id, data in gen_ids.items():
+                    if first:
+                        headers = ["Gene ID", "Gene"]
+                        for label in data.keys():
+                            headers.append(label)
+                        table.append(headers)
+                        first = False
+                    row = [gen_id, get_name(gen_id)]  # implement get_name() here
+                    for datum in data.values():
+                        row.append(datum)
+                    table.append(row)
+                w.writerows(table)
+
+    print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
+    return 0
