@@ -1,4 +1,5 @@
 from urllib.request import urlretrieve
+from urllib.error import HTTPError
 import zipfile as zf
 import numpy as np
 import math
@@ -6,15 +7,11 @@ import json
 import os
 import hurst
 import csv
-from StatTools.analysis.dfa import dfa
-from StatTools.analysis.utils import analyse_zero_cross_ff
-import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score, silhouette_samples
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-#import request
 
 def one_dimension(sequence):
     rw = {"AG-CT": [], "AC-GT": [], "AT-CG": []}
@@ -237,7 +234,12 @@ def file_import(gen_id):
             f"https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/{gen_id}/download?include_annotation_type=GENOME_FASTA"
         )
         filename = f"static/{gen_id}.zip"
-        urlretrieve(url, filename)
+        try:
+            urlretrieve(url, filename)
+        except HTTPError:
+            print("This gene ID does not exist, please try again")
+            return 1
+
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
             try:
@@ -263,7 +265,11 @@ def file_import(gen_id):
             f"https://api.ncbi.nlm.nih.gov/datasets/v2/gene/id/{gen_id}/download?include_annotation_type=FASTA_RNA"
         )
         filename = f"static/{gen_id}.zip"
-        urlretrieve(url, filename)
+        try:
+            urlretrieve(url, filename)
+        except HTTPError:
+            print(f"{gen_id} does not exist in the GenBank database")
+            return 1
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
             try:
