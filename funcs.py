@@ -359,16 +359,13 @@ def k_means(results, k_means_type = 1):
     all_params = np.array(all_params)
     scaler = StandardScaler()
     all_params_scaled = scaler.fit_transform(all_params)
-    print(all_params_scaled)
     n_components = min(all_params.shape[0], all_params.shape[1])
     pca = PCA(n_components)
-    all_params_pca = pca.fit_transform(all_params)
-    print(all_params_pca)
+    all_params_pca = pca.fit_transform(all_params_scaled)
     max_silhouette = float('-inf')
     for n in range(2, min(25, len(all_params))):
-        kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params)
-        print(kmeans_clusters)
-        silhouette = silhouette_score(all_params, kmeans_clusters)
+        kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params_pca)
+        silhouette = silhouette_score(all_params_pca, kmeans_clusters)
         max_silhouette = max(max_silhouette, silhouette)
         if max_silhouette==silhouette:
             opt_n = n
@@ -531,6 +528,23 @@ def seq_analysis(gen_ids_list, one_d: dict, two_d: dict, three_d: dict):
                         row.append(datum)
                     table.append(row)
                 w.writerows(table)
+    k_means_params = input("Which parameters would you like to use for the k-means analysis?\n"
+                           "1. All parameters\n"
+                           "2. 1D parameters\n"
+                           "3. 2D parameters\n"
+                           "4. 3D parameters\n"
+                           "5. 3D mean position\n")
+    opt_n, opt_clusters, max_silhouette, max_silhouette_samples = k_means(results, k_means_params)
+    k_means_results = {}
+    for i in range(len(results.keys())):
+        k_means_results[list(results.keys())[i]] = [opt_clusters[i], max_silhouette_samples[i]]
+    with open(f"{file_path}/k_means.csv", "w") as f:
+        w = csv.writer(f)
+        headers = ["Gene Name", "Cluster", "Silhouette Score"]
+        table = [headers]
+        for name, clusters in k_means_results.items():
+            table.append([name, clusters[0], clusters[1]])
+        w.writerows(table)
 
     print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
     return 0

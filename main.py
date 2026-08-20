@@ -9,12 +9,13 @@ import csv
 
 while True:
     try:
-        x = int(input("Please select which service you would like to use:\n"
-                      "1. View the time series graphs and analysis for one gene\n"
-                      "2. View the time series analysis for a group of genes "
-                      "(please upload a list of RefSeq Gene IDs in ID.txt in the working directory)\n"
-                      "3. View the time series analysis for a group of sequences "
-                      "(please upload a list of FASTA formatted sequences in SEQ.txt in the working directory)\n"
+        x = int(input("Please select which service you would like to use:\n\n"
+                      "1. View the time series graphs and analysis for one gene\n\n"
+                      "2. View the time series analysis for a group of genes\n"
+                      "(please upload a list of RefSeq Gene IDs in ID.txt in the working directory)\n\n"
+                      "3. View the time series analysis for a group of sequences\n"
+                      "(please upload a list of newline separated names and sequences \n"
+                      "(<gene name>: <gene sequence>) in SEQ.txt in the working directory)\n\n"
                       "4. Exit\n"))
     except ValueError:
         print("Invalid selection, please input either 1 or 2")
@@ -362,9 +363,7 @@ while True:
                                 file_data[dimension][mapping][gen_id][label] = datum
 
                 iteration = len(os.listdir("results"))
-                results_json = json.dumps(results, indent=4)
-                with open(f"results_{iteration}.json", "w") as r:
-                    r.write(results_json)
+
                 if name:
                     file_path = f"results/{name}"
                 else:
@@ -381,6 +380,9 @@ while True:
                         else:
                             file_path = file_path + f"({i})"
                         i += 1
+                results_json = json.dumps(results, indent=4)
+                with open(f"{file_path}/results.json", "w") as r:
+                    r.write(results_json)
                 for dimension, mappings in file_data.items():
                     for mapping, gen_ids in mappings.items():
                         with open(f"{file_path}/{dimension}_{mapping}.csv", "w") as f:
