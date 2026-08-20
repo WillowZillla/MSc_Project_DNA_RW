@@ -11,7 +11,7 @@ from StatTools.analysis.utils import analyse_zero_cross_ff
 import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, silhouette_samples
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 #import request
@@ -311,33 +311,54 @@ def get_name(gen_id):
             gene_name = report["description"]
     return org_name + " " + gene_name
 
-def k_means(results, test = False):
+def k_means(results, k_means_type):
     #labels = [get_name(gen_id) for gen_id in results.keys()]
     all_params = []
-    if test:
-        for gen_id, dimensions in results.items():
-            threed_params = [results[gen_id]["3D"]["AGC"]["Adenine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Guanine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Cytosine DFA Hurst Exponent"], results[gen_id]["3D"]["AGC"]["Katz Dimension"]]
-            all_params.append(threed_params)
-    if not test:
-        for gen_id, dimensions in results.items():
-            params_ext = []
-            for dimension, mappings in dimensions.items():
-                for mapping, params in mappings.items():
+    match int(k_means_type):
+        case 1:
+            for gen_id, dimensions in results.items():
+                params_ext = []
+                for dimension, mappings in dimensions.items():
+                    for mapping, params in mappings.items():
+                        for param in params.values():
+                           params_ext.append(param)
+                all_params.append(params_ext)
+        case 2:
+            for gen_id, dimensions in results.items():
+                one_d_params=[]
+                for mapping, params in dimensions["1D"].items():
                     for param in params.values():
-                       params_ext.append(param)
-            all_params.append(params_ext)
+                        one_d_params.append(param)
+                all_params.append(one_d_params)
+        case 3:
+            for gen_id, dimensions in results.items():
+                two_d_params=[]
+                for mapping, params in dimensions["2D"].items():
+                    for param in params.values():
+                        two_d_params.append(param)
+                all_params.append(two_d_params)
+        case 4:
+            for gen_id, dimensions in results.items():
+                three_d_params=[]
+                for mapping, params in dimensions["3D"].items():
+                    for param in params.values():
+                        three_d_params.append(param)
+                all_params.append(three_d_params)
+        case 5:
+            for gen_id, dimensions in results.items():
+                three_d_mean_pos = [dimensions["3D"]["AGC"]["Mean A Position"], dimensions["3D"]["AGC"]["Mean G Position"], dimensions["3D"]["AGC"]["Mean C Position"]]
+                all_params.append(three_d_mean_pos)
+
     print(all_params)
     all_params = np.array(all_params)
-    # scaler = StandardScaler()
-    # all_params_scaled = scaler.fit_transform(all_params)
-    # print(all_params_scaled)
-    # n_components = min(all_params.shape[0], all_params.shape[1])
-    # pca = PCA(n_components)
-    # all_params_pca = pca.fit_transform(all_params)
-    # print(all_params_pca)
+    scaler = StandardScaler()
+    all_params_scaled = scaler.fit_transform(all_params)
+    print(all_params_scaled)
+    n_components = min(all_params.shape[0], all_params.shape[1])
+    pca = PCA(n_components)
+    all_params_pca = pca.fit_transform(all_params)
+    print(all_params_pca)
     max_silhouette = float('-inf')
-    opt_n = 0
-    opt_clusters = None
     for n in range(2, min(25, len(all_params))):
         kmeans_clusters = KMeans(n_clusters=n, random_state=10).fit_predict(all_params)
         print(kmeans_clusters)
@@ -346,7 +367,8 @@ def k_means(results, test = False):
         if max_silhouette==silhouette:
             opt_n = n
             opt_clusters = kmeans_clusters
-    return opt_n, opt_clusters, max_silhouette
+            max_silhouette_samples = silhouette_samples(all_params, kmeans_clusters)
+    return opt_n, opt_clusters, max_silhouette, max_silhouette_samples
 
 # with open("results.json", "r") as r:
 #     results = json.load(r)
@@ -365,9 +387,9 @@ def k_means(results, test = False):
 #     for gene in genes:
 #           print(f"\t\t - {get_name(gene)}")
 
-url = "https://www.ncbi.nlm.nih.gov/nuccore/X80934.1?report=fasta&log$=seqview&format=text"
-filename = "nuccore_test.txt"
-urlretrieve(url, filename)
+# url = "https://www.ncbi.nlm.nih.gov/nuccore/X80934.1?report=fasta&log$=seqview&format=text"
+# filename = "nuccore_test.txt"
+# urlretrieve(url, filename)
 
 
 def seq_analysis(gen_ids_list, one_d: dict, two_d: dict, three_d: dict):

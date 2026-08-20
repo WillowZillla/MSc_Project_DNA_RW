@@ -49,29 +49,26 @@ while True:
                     print(f"{mapping} DFA exponent: {dfa_H}")
                     pxx, freq = plt.psd(series, NFFT=16384)
                     plt.close()
-                    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, layout="constrained")
-                    plt.title = gen_id+" "+mapping
-                    ax0.set_xlabel("base number")
-                    ax0.set_ylabel("static time series")
+                    fig, (ax0, ax1) = plt.subplots(2, layout="constrained")
+                    ax0.title = get_name(gen_id)+" "+mapping
+                    ax0.set_xlabel("base position")
+                    ax0.set_ylabel(f"{mapping[0]+mapping[1]} against {mapping[3]+mapping[4]}")
                     ax0.plot(series)
+                    #ax1.title(f"{get_name(gen_id)} Power Spectrum")
+                    #ax1.psd(series, NFFT=16384)   # get all graphs on one image to show it
 
-                    ax1.set_xlabel("Frequency")
-                    ax1.set_ylabel("V2/Hz")
-                    ax1.psd(series, NFFT=16384)   # get all graphs on one image to show it
-
-
-                    ax1.set_xlabel("Frequency (log scale)")
-                    ax1.set_ylabel("V2/Hz")
+                    #ax1.set_xlabel("Frequency (log scale)")
+                    #ax1.set_ylabel("Amplitude (log scale)")
                     # ax2.psd(series, NFFT=8192)
-                    ax1.set_xscale("log")
-
-                    ax2.set_xlabel("log(Frequency)")
-                    ax2.set_ylabel("V2/Hz")
+                    #ax1.set_xscale("log")
+                    ax1.title(f"{get_name(gen_id)} Power Spectrum")
+                    ax1.set_xlabel("log(Frequency)")
+                    ax1.set_ylabel("log(Amplitude)")
                     type1_freq = np.arange(0, 1+1/(len(pxx)), 1/(len(pxx)))
                     type1_freq = np.delete(type1_freq, 0)
                     log_type1_freq = np.log(type1_freq)
                     log_type1_pxx = np.log(pxx)
-                    ax2.plot(log_type1_freq, log_type1_pxx)
+                    ax1.plot(log_type1_freq, log_type1_pxx)
 
                     # ax2.set_xlabel("log(Frequency)")
                     # ax2.set_ylabel("V2/Hz")
@@ -105,7 +102,10 @@ while True:
                     beta = []
                     for x in log_type1_freq:
                         beta.append(slope*x+intercept)
-                    ax2.plot(log_type1_freq, beta, color = "red")
+                    ax1.plot(log_type1_freq, beta, color = "red")
+                    ax1.grid()
+
+                    ax1.legend(["PSD"], [f"Linear Regression, slope = {slope}"], loc = "lower left")
 
                     # fm = FOOOF()
                     # report = fm.report(freq, pxx, [freq[0], freq[-1]])
@@ -115,15 +115,19 @@ while True:
                     plt.show()
 
                 for mapping, series in two_d_series.items():
-                    plt.title = mapping
-                    plt.xlabel(mapping[0]+mapping[1])
-                    plt.ylabel(mapping[3]+mapping[4])
+                    plt.title = get_name(gen_id)+" "+mapping
+                    plt.xlabel(mapping[0]+"/"+mapping[1])
+                    plt.ylabel(mapping[3]+"/"+mapping[4])
                     plt.plot(series[0], series[1])      # get all graphs on one image to show it
                     plt.show()
                 fig = plt.figure()
                 ax = plt.axes(projection = "3d")
                 ax.plot3D(three_d_series[0], three_d_series[1], three_d_series[2])
                 ax.set_title(gen_id)
+                ax.set_xlabel("A")
+                ax.set_ylabel("G")
+                ax.set_zlabel("C")
+                plt.title(get_name(gen_id)+" AGC")
                 plt.show()
 
             case 2:
@@ -237,7 +241,6 @@ while True:
                     one_d[name] = one_dimension(sequence)
                     two_d[name] = two_dimension(sequence)
                     three_d[name] = three_dimension(sequence)
-                    print(f"{name}: {sequence}")
 
                 print(
                     "\n###############################\nStarting 1 dimensional analysis...\n###############################\n")
@@ -373,8 +376,26 @@ while True:
                                     row.append(datum)
                                 table.append(row)
                             w.writerows(table)
+                k_means_params = input("Which parameters would you like to use for the k-means analysis?\n"
+                                       "1. All parameters\n"
+                                       "2. 1D parameters\n"
+                                       "3. 2D parameters\n"
+                                       "4. 3D parameters\n"
+                                       "5. 3D mean position\n")
+                opt_n, opt_clusters, max_silhouette, max_silhouette_samples = k_means(results, k_means_params)
+                k_means_results = {}
+                for i in range(len(results.keys())):
+                    k_means_results[list(results.keys())[i]] = [opt_clusters[i], max_silhouette_samples[i]]
+                with open(f"{file_path}/k_means.csv", "w") as f:
+                    w = csv.writer(f)
+                    headers = ["Gene Name", "Cluster", "Silhouette Score"]
+                    table = [headers]
+                    for name, clusters in k_means_results.items():
+                        table.append([name, clusters[0], clusters[1]])
+                    w.writerows(table)
 
-                print(f"\nYour results can be found in the working directory under <{file_path}> :)\n")
+                print(f"\nYour results can be found in the working directory under <{file_path}> :)\n"
+                      f"The optimum number of clusters was {opt_n}, with an average silhouette score of {max_silhouette}")
 
 
 
