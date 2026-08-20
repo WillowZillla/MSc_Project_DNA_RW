@@ -493,9 +493,7 @@ def seq_analysis(gen_ids_list, one_d: dict, two_d: dict, three_d: dict):
                     file_data[dimension][mapping][gen_id][label] = datum
 
     iteration = len(os.listdir("results"))
-    results_json = json.dumps(results, indent=4)
-    with open(f"results_{iteration}.json", "w") as r:
-        r.write(results_json)
+
     if name:
         file_path = f"results/{name}"
     else:
@@ -512,6 +510,9 @@ def seq_analysis(gen_ids_list, one_d: dict, two_d: dict, three_d: dict):
             else:
                 file_path = file_path + f"({i})"
             i += 1
+    results_json = json.dumps(results, indent=4)
+    with open(f"{file_path}/results.json", "w") as r:
+        r.write(results_json)
     for dimension, mappings in file_data.items():
         for mapping, gen_ids in mappings.items():
             with open(f"{file_path}/{dimension}_{mapping}.csv", "w") as f:
