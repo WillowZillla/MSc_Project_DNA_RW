@@ -2,11 +2,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from funcs import *
 import hurst
-import scipy.signal as sp
 from scipy import stats
 import csv
-import kneed as kn
-from fooof import FOOOF
+
+
 
 while True:
     try:
@@ -24,11 +23,16 @@ while True:
         match x:
             case 1:
                 gen_id = input("GenBank ID: ")
-                file_import(gen_id)
+                if gen_id in os.listdir("sequences"):
+                    print(f"{gen_id} already downloaded")
+                else:
+                    failed = file_import(gen_id)
+                    if failed:
+                        continue
+                    else:
+                        print(f"{gen_id} downloaded successfully")
 
-                #sequence = seq_extract(gen_id)
-
-                sequence = 'ATGGTGCATCTGACTCCTGAGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGCTGCTGGTGGTCTACCCTTGGACCCAGAGGTTCTTTGAGTCCTTTGGGGATCTGTCCACTCCTGATGCTGTTATGGGCAACCCTAAGGTGAAGGCTCATGGCAAGAAAGTGCTCGGTGCCTTTAGTGATGGCCTGGCTCACCTGGACAACCTCAAGGGCACCTTTGCCACACTGAGTGAGCTGCACTGTGACAAGCTGCACGTGGATCCTGAGAACTTCAGGCTCCTGGGCAACGTGCTGGTCTGTGTGCTGGCCCATCACTTTGGCAAAGAATTCACCCCACCAGTGCAGGCTGCCTATCAGAAAGTGGTGGCTGGTGTGGCTAATGCCCTGGCCCACAAGTACCACTAA'
+                sequence = seq_extract(gen_id)
 
                 one_d_series = one_dimension(sequence)
                 two_d_series = two_dimension(sequence)
@@ -47,10 +51,17 @@ while True:
                     print(f"{mapping} Katz dimension: {k}")
                     dfa_H = dfa_hurst(series)
                     print(f"{mapping} DFA exponent: {dfa_H}")
-                    pxx, freq = plt.psd(series, NFFT=16384)
+                    base = len(series)//12
+                    NFFT = 1
+                    while True:
+                        NFFT *=2
+                        if NFFT>=base:
+                            break
+
+                    pxx, freq = plt.psd(series, NFFT=NFFT)
                     plt.close()
                     fig, (ax0, ax1) = plt.subplots(2, layout="constrained")
-                    ax0.title = get_name(gen_id)+" "+mapping
+                    ax0.set_title(get_name(gen_id).title()+" "+mapping)
                     ax0.set_xlabel("base position")
                     ax0.set_ylabel(f"{mapping[0]+mapping[1]} against {mapping[3]+mapping[4]}")
                     ax0.plot(series)
@@ -61,15 +72,22 @@ while True:
                     #ax1.set_ylabel("Amplitude (log scale)")
                     # ax2.psd(series, NFFT=8192)
                     #ax1.set_xscale("log")
-                    ax1.title(f"{get_name(gen_id)} Power Spectrum")
+                    ax1.set_title(f"{get_name(gen_id).title()} Power Spectrum")
                     ax1.set_xlabel("log(Frequency)")
                     ax1.set_ylabel("log(Amplitude)")
                     type1_freq = np.arange(0, 1+1/(len(pxx)), 1/(len(pxx)))
+
+                    print(len(pxx))
+                    print(len(type1_freq))
                     type1_freq = np.delete(type1_freq, 0)
+                    if len(type1_freq)>len(pxx):
+                        while True:
+                            type1_freq = np.delete(type1_freq, -1)
+                            if len(type1_freq)==len(pxx):
+                                break
                     log_type1_freq = np.log(type1_freq)
                     log_type1_pxx = np.log(pxx)
                     ax1.plot(log_type1_freq, log_type1_pxx)
-
                     # ax2.set_xlabel("log(Frequency)")
                     # ax2.set_ylabel("V2/Hz")
                     # type2_freq = np.delete(freq, 0)
@@ -98,14 +116,13 @@ while True:
 
 
                     slope, intercept, r, p, std_err = stats.linregress(x, y)
-                    print(intercept, slope)
+                    print(f"Intercept: {intercept}, \nSlope: {slope}")
                     beta = []
                     for x in log_type1_freq:
                         beta.append(slope*x+intercept)
                     ax1.plot(log_type1_freq, beta, color = "red")
-                    ax1.grid()
 
-                    ax1.legend(["PSD"], [f"Linear Regression, slope = {slope}"], loc = "lower left")
+                    ax1.grid()
 
                     # fm = FOOOF()
                     # report = fm.report(freq, pxx, [freq[0], freq[-1]])
@@ -115,10 +132,13 @@ while True:
                     plt.show()
 
                 for mapping, series in two_d_series.items():
-                    plt.title = get_name(gen_id)+" "+mapping
+                    print(f"{mapping[0]}/{mapping[1]} DFA: {dfa_hurst(series[0])}")
+                    print(f"{mapping[3]}/{mapping[4]} DFA: {dfa_hurst(series[1])}")
+                    plt.title(get_name(gen_id).title()+" "+mapping)
                     plt.xlabel(mapping[0]+"/"+mapping[1])
                     plt.ylabel(mapping[3]+"/"+mapping[4])
-                    plt.plot(series[0], series[1])      # get all graphs on one image to show it
+                    plt.plot(series[0], series[1])
+                    plt.grid() # get all graphs on one image to show it
                     plt.show()
                 fig = plt.figure()
                 ax = plt.axes(projection = "3d")
@@ -127,7 +147,11 @@ while True:
                 ax.set_xlabel("A")
                 ax.set_ylabel("G")
                 ax.set_zlabel("C")
-                plt.title(get_name(gen_id)+" AGC")
+                print(f"Adenosine DFA: {dfa_hurst(three_d_series[0])}")
+                print(f"Guanine DFA: {dfa_hurst(three_d_series[1])}")
+                print(f"Cytosine DFA: {dfa_hurst(three_d_series[1])}")
+                plt.grid()
+                plt.title(get_name(gen_id).title()+" AGC")
                 plt.show()
 
             case 2:
@@ -147,12 +171,11 @@ while True:
                 gen_id_remove = []
                 for gen_id in gen_ids_list:
                     failed = 0
-                    print(gen_id)
                     if gen_id in os.listdir("sequences"):
                         print(f"{gen_id} already downloaded")
                     else:
                         failed = file_import(gen_id)
-                        print(failed)
+
                         if failed:
                             gen_id_remove.append(gen_id)
                             print(f"{gen_id} skipped")
@@ -252,10 +275,10 @@ while True:
                         K = katz(series, 1)
                         M = mean_pos(series, 1)
                         dfa_H = dfa_hurst(series)
-                        results[gen_id]["1D"][mapping] = {f"R/S Hurst Exponent": H,
-                                                          f"DFA Hurst Exponent": dfa_H,
-                                                          f"Katz Dimension": K,
-                                                          f"Mean Position": M}
+                        results[gen_id]["1D"][mapping] = {f"R/S Hurst Exponent": round(H, 3),
+                                                          f"DFA Hurst Exponent": round(dfa_H, 3),
+                                                          f"Katz Dimension": round(K, 3),
+                                                          f"Mean Position": round(M, 3)}
                     print(f"{gen_id}\t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("1 dimensional analysis complete!")
@@ -276,13 +299,13 @@ while True:
                         dfa_Hy = dfa_hurst(y_series)
                         K = katz(series, 2)
                         Mx, My = mean_pos(series, 2)
-                        results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} R/S Hurst Exponent": Hx,
-                                                          f"{mapping[3] + mapping[4]} R/S Hurst Exponent": Hy,
-                                                          f"{mapping[0] + mapping[1]} DFA Hurst Exponent": dfa_Hx,
-                                                          f"{mapping[3] + mapping[4]} DFA Hurst Exponent": dfa_Hy,
-                                                          f"Katz Dimension": K,
-                                                          f"Mean {mapping[0] + mapping[1]} Position": Mx,
-                                                          f"Mean {mapping[3] + mapping[4]} Position": My}
+                        results[gen_id]["2D"][mapping] = {f"{mapping[0] + mapping[1]} R/S Hurst Exponent": round(Hx, 3),
+                                                          f"{mapping[3] + mapping[4]} R/S Hurst Exponent": round(Hy, 3),
+                                                          f"{mapping[0] + mapping[1]} DFA Hurst Exponent": round(dfa_Hx, 3),
+                                                          f"{mapping[3] + mapping[4]} DFA Hurst Exponent": round(dfa_Hy, 3),
+                                                          f"Katz Dimension": round(K, 3),
+                                                          f"Mean {mapping[0] + mapping[1]} Position": round(Mx, 3),
+                                                          f"Mean {mapping[3] + mapping[4]} Position": round(My, 3)}
                     print(f"{gen_id} \t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("2 dimensional analysis complete!")
@@ -306,16 +329,16 @@ while True:
                     dfa_Hz = dfa_hurst(z_series)
                     K = katz(series, 2)
                     Mx, My, Mz = mean_pos(series, 3)
-                    results[gen_id]["3D"]["AGC"] = {f"Adenine R/S Hurst Exponent": Hx,
-                                                    f"Guanine R/S Hurst Exponent": Hy,
-                                                    f"Cytosine R/S Hurst Exponent": Hz,
-                                                    f"Adenine DFA Hurst Exponent": dfa_Hx,
-                                                    f"Guanine DFA Hurst Exponent": dfa_Hy,
-                                                    f"Cytosine DFA Hurst Exponent": dfa_Hz,
-                                                    f"Katz Dimension": K,
-                                                    f"Mean A Position": Mx,
-                                                    f"Mean G Position": My,
-                                                    f"Mean C Position": Mz}
+                    results[gen_id]["3D"]["AGC"] = {f"Adenine R/S Hurst Exponent": round(Hx, 3),
+                                                    f"Guanine R/S Hurst Exponent": round(Hy, 3),
+                                                    f"Cytosine R/S Hurst Exponent": round(Hz, 3),
+                                                    f"Adenine DFA Hurst Exponent": round(dfa_Hx, 3),
+                                                    f"Guanine DFA Hurst Exponent": round(dfa_Hy, 3),
+                                                    f"Cytosine DFA Hurst Exponent": round(dfa_Hz, 3),
+                                                    f"Katz Dimension": round(K, 3),
+                                                    f"Mean A Position": round(Mx, 3),
+                                                    f"Mean G Position": round(My, 3),
+                                                    f"Mean C Position": round(Mz, 3)}
                     print(f"{gen_id}\t\t{round(((seq_names.index(gen_id) + 1) / len(seq_names)) * 100, 2)}%")
 
                 print("3 dimensional analysis complete!")

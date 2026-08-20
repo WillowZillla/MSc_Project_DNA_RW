@@ -311,7 +311,7 @@ def get_name(gen_id):
             gene_name = report["description"]
     return org_name + " " + gene_name
 
-def k_means(results, k_means_type):
+def k_means(results, k_means_type = 1):
     #labels = [get_name(gen_id) for gen_id in results.keys()]
     all_params = []
     match int(k_means_type):
