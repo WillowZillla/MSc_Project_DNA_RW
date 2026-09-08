@@ -239,6 +239,9 @@ def file_import(gen_id):
         except HTTPError:
             print("This gene ID does not exist, please try again")
             return 1
+        except InvalidURL:
+            print("Invalid gene ID format, check from control/special characters then please try again")
+            return 1
 
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
@@ -269,6 +272,9 @@ def file_import(gen_id):
             urlretrieve(url, filename)
         except HTTPError:
             print(f"{gen_id} does not exist in the GenBank database")
+            return 1
+        except InvalidURL:
+            print("Invalid gene ID format, check from control/special characters then please try again")
             return 1
 
         with zf.ZipFile(f"static/{gen_id}.zip", "r") as seq:
