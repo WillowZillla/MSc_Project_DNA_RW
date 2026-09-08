@@ -18,22 +18,57 @@ while True:
                       "(<gene name>: <gene sequence>) in SEQ.txt in the working directory)\n\n"
                       "4. Exit\n"))
     except ValueError:
-        print("Invalid selection, please input either 1 or 2")
+        print("Invalid selection, please input either 1, 2, 3 or 4")
         continue
     if x in [1, 2, 3, 4]:
         match x:
             case 1:
-                gen_id = input("GenBank ID: ")
-                if gen_id in os.listdir("sequences"):
-                    print(f"{gen_id} already downloaded")
-                else:
-                    failed = file_import(gen_id)
-                    if failed:
+                while True:
+                    try:
+                        x = int(input("Would you like to use a GenBank ID or paste a sequence name in manually?:\n\n"
+                                      "1. GenBank ID\n"
+                                      "2. Manually\n"
+                                      "3. Exit\n"
+                                      ))
+                    except ValueError:
+                        print("Invalid selection, please input either 1, 2 or 3")
+                        continue
+                    if x not in [1, 2, 3]:
+                        print("Invalid selection, please input either 1, 2 or 3")
                         continue
                     else:
-                        print(f"{gen_id} downloaded successfully")
+                        break
+                match x:
+                    case 1:
+                        gen_id = input("GenBank ID: ")
+                        if gen_id in os.listdir("sequences"):
+                            print(f"{gen_id} already downloaded")
+                        else:
+                            failed = file_import(gen_id)
+                            if failed:
+                                continue
+                            else:
+                                print(f"{gen_id} downloaded successfully")
 
-                sequence = seq_extract(gen_id)
+                        sequence = seq_extract(gen_id)
+                        seq_name = get_name(gen_id)
+                    case 2:
+                        seq_name = input("Sequence name:")
+                        sequence = input("Sequence:")
+                        sequence = sequence.strip()
+                        invalid = False
+                        if len(sequence)<100:
+                            print("Sequence is too short")
+                            continue
+                        for base in sequence:
+                            if base not in ["A","G", "C", "T"]:
+                                invalid = True
+                        if invalid:
+                            print("Invalid sequence")
+                            continue
+                    case 3:
+                        continue
+
 
                 one_d_series = one_dimension(sequence)
                 two_d_series = two_dimension(sequence)
@@ -62,7 +97,7 @@ while True:
                     pxx, freq = plt.psd(series, NFFT=NFFT)
                     plt.close()
                     fig, (ax0, ax1) = plt.subplots(2, layout="constrained")
-                    ax0.set_title(get_name(gen_id).title()+" "+mapping)
+                    ax0.set_title(seq_name.title()+" "+mapping)
                     ax0.set_xlabel("base position")
                     ax0.set_ylabel(f"{mapping[0]+mapping[1]} against {mapping[3]+mapping[4]}")
                     ax0.plot(series)
@@ -73,7 +108,7 @@ while True:
                     #ax1.set_ylabel("Amplitude (log scale)")
                     # ax2.psd(series, NFFT=8192)
                     #ax1.set_xscale("log")
-                    ax1.set_title(f"{get_name(gen_id).title()} Power Spectrum")
+                    ax1.set_title(f"{seq_name.title()} Power Spectrum")
                     ax1.set_xlabel("log(Frequency)")
                     ax1.set_ylabel("log(Amplitude)")
                     type1_freq = np.arange(0, 1+1/(len(pxx)), 1/(len(pxx)))
@@ -121,7 +156,7 @@ while True:
                     beta = []
                     for x in log_type1_freq:
                         beta.append(slope*x+intercept)
-                    ax1.plot(log_type1_freq, beta, color = "red")
+                    #ax1.plot(log_type1_freq, beta, color = "red")
 
                     ax1.grid()
 
@@ -135,7 +170,7 @@ while True:
                 for mapping, series in two_d_series.items():
                     print(f"{mapping[0]}/{mapping[1]} DFA: {dfa_hurst(series[0])}")
                     print(f"{mapping[3]}/{mapping[4]} DFA: {dfa_hurst(series[1])}")
-                    plt.title(get_name(gen_id).title()+" "+mapping)
+                    plt.title(seq_name.title()+" "+mapping)
                     plt.xlabel(mapping[0]+"/"+mapping[1])
                     plt.ylabel(mapping[3]+"/"+mapping[4])
                     plt.plot(series[0], series[1])
@@ -144,7 +179,7 @@ while True:
                 fig = plt.figure()
                 ax = plt.axes(projection = "3d")
                 ax.plot3D(three_d_series[0], three_d_series[1], three_d_series[2])
-                ax.set_title(gen_id)
+                ax.set_title(seq_name)
                 ax.set_xlabel("A")
                 ax.set_ylabel("G")
                 ax.set_zlabel("C")
@@ -152,7 +187,7 @@ while True:
                 print(f"Guanine DFA: {dfa_hurst(three_d_series[1])}")
                 print(f"Cytosine DFA: {dfa_hurst(three_d_series[1])}")
                 plt.grid()
-                plt.title(get_name(gen_id).title()+" AGC")
+                plt.title(seq_name.title()+" AGC")
                 plt.show()
 
             case 2:
