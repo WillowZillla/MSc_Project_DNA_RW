@@ -5,7 +5,12 @@ import hurst
 from scipy import stats
 import csv
 
-
+if not os.path.exists("static"):
+    os.makedirs("static")
+if not os.path.exists("results"):
+    os.makedirs("results")
+if not os.path.exists("sequences"):
+    os.makedirs("sequences")
 
 while True:
     try:
